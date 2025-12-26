@@ -58,13 +58,12 @@ from licenses.infrastructure.repositories.django_license_repository import (
 )
 from api.v1.brand.serializers import (
     CancelLicenseRequestSerializer,
-    ListLicensesByEmailQuerySerializer,
+    LicenseListItemSerializer,
     ProvisionLicenseRequestSerializer,
     ProvisionLicenseResponseSerializer,
     RenewLicenseRequestSerializer,
     ResumeLicenseRequestSerializer,
     SuspendLicenseRequestSerializer,
-    LicenseListItemSerializer,
 )
 
 
