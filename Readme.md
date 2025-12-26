@@ -86,10 +86,18 @@ The application is organized into modules:
 
 ### Observability
 
-- Structured logging with correlation IDs
+- **OpenTelemetry**: Distributed tracing, metrics, and auto-instrumentation
+- **Prometheus**: Metrics collection and storage
+- **Grafana**: Visualization dashboards
+- **Loki**: Log aggregation and querying
+- **Tempo**: Distributed tracing backend
+- Structured logging with correlation IDs and trace IDs
 - Health check endpoints (`/health`, `/health/db`, `/health/cache`, `/ready`)
 - Request duration tracking
 - Audit logging for all license operations
+- Custom business metrics (license operations, seat usage, etc.)
+
+See [Observability Guide](docs/OBSERVABILITY.md) for detailed information.
 
 ## Getting Started
 
