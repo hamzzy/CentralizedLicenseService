@@ -90,9 +90,13 @@ import os
 if os.environ.get("USE_RABBITMQ", "false").lower() == "true":
     from core.infrastructure.rabbitmq_event_bus import RabbitMQEventBus
 
-    broker_url = os.environ.get(
-        "RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672//"
+    # In Docker, use service name 'rabbitmq', locally use 'localhost'
+    default_broker_url = (
+        "amqp://guest:guest@rabbitmq:5672//"
+        if os.environ.get("DOCKER_ENV")
+        else "amqp://guest:guest@localhost:5672//"
     )
+    broker_url = os.environ.get("RABBITMQ_URL", default_broker_url)
     event_bus = RabbitMQEventBus(broker_url=broker_url)
 else:
     event_bus = InMemoryEventBus()

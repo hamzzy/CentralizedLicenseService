@@ -94,11 +94,12 @@ services:
     image: grafana/promtail:latest
     volumes:
       - ./docker/observability/promtail-config.yml:/etc/promtail/config.yml
-      - /var/log:/var/log:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
     command: -config.file=/etc/promtail/config.yml
     depends_on:
       - loki
+    # Note: Promtail in Docker Compose can't access Docker socket
+    # For production, use Docker log driver or file-based collection
+    # For now, logs are collected via docker-compose logs and can be forwarded manually
 
   tempo:
     image: grafana/tempo:latest
