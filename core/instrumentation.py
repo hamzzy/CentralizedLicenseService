@@ -18,23 +18,30 @@ try:
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
     from opentelemetry.trace import NoOpTracer
+
     OPENTELEMETRY_AVAILABLE = True
 except ImportError:
     # OpenTelemetry not available (e.g., in test environment)
     OPENTELEMETRY_AVAILABLE = False
+
     # Create a mock NoOpTracer for when opentelemetry is not available
     class NoOpTracer:
         def start_as_current_span(self, name):
             class NoOpSpan:
                 def __enter__(self):
                     return self
+
                 def __exit__(self, *args):
                     pass
+
                 def set_attribute(self, *args, **kwargs):
                     pass
+
                 def set_status(self, *args, **kwargs):
                     pass
+
             return NoOpSpan()
+
 
 from prometheus_client import start_http_server
 
@@ -113,7 +120,7 @@ def get_tracer(name: str):
     """
     if not OPENTELEMETRY_AVAILABLE:
         return NoOpTracer()
-    
+
     try:
         return trace.get_tracer(name)
     except Exception:
@@ -124,6 +131,7 @@ def get_tracer(name: str):
 # Provide trace status constants that work with or without OpenTelemetry
 if OPENTELEMETRY_AVAILABLE:
     from opentelemetry import trace as otel_trace
+
     Status = otel_trace.Status
     StatusCode = otel_trace.StatusCode
 else:

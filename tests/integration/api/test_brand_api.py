@@ -3,10 +3,11 @@ Integration tests for Brand API endpoints.
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from brands.infrastructure.models import ApiKey, Brand
 
@@ -20,6 +21,7 @@ class TestBrandAPI:
         """Test successful license provisioning via API."""
         # Create brand and API key with unique values
         import uuid
+
         unique_id = str(uuid.uuid4())[:8]
         brand = Brand.objects.create(
             name=f"TestBrand{unique_id}",
@@ -53,12 +55,15 @@ class TestBrandAPI:
             {
                 "customer_email": "test@example.com",
                 "products": [str(product.id)],
-                "expiration_date": (datetime.utcnow() + timedelta(days=365)).isoformat(),
+                "expiration_date": (timezone.now() + timedelta(days=365)).isoformat(),
                 "max_seats": 5,
             },
             HTTP_X_API_KEY=raw_key,
+            format="json",
         )
 
+        if response.status_code != 201:
+            print(f"DEBUG: Response body: {response.content.decode()}")
         assert response.status_code == 201
         data = response.json()
         assert "license_key" in data
@@ -75,6 +80,7 @@ class TestBrandAPI:
                 "products": [str(uuid.uuid4())],
             },
             HTTP_X_API_KEY="invalid-key",
+            content_type="application/json",
         )
 
         assert response.status_code == 401
@@ -97,12 +103,13 @@ class TestBrandAPI:
             key_hash=key_hash,
         )
 
-        new_expiration = datetime.utcnow() + timedelta(days=730)
+        new_expiration = timezone.now() + timedelta(days=730)
         url = reverse("brand:renew-license", kwargs={"license_id": db_license.id})
         response = api_client.patch(
             url,
             {"expiration_date": new_expiration.isoformat()},
             HTTP_X_API_KEY=raw_key,
+            format="json",
         )
 
         assert response.status_code == 200
@@ -131,7 +138,11 @@ class TestBrandAPI:
             "brand:suspend-license",
             kwargs={"license_id": db_license.id},
         )
-        response = api_client.patch(url, HTTP_X_API_KEY=raw_key)
+        response = api_client.patch(
+            url,
+            HTTP_X_API_KEY=raw_key,
+            format="json",
+        )
 
         assert response.status_code == 200
         data = response.json()

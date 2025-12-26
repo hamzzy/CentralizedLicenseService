@@ -18,6 +18,7 @@ try:
     try:
         from opentelemetry import trace
         from opentelemetry.trace import format_trace_id
+
         OPENTELEMETRY_AVAILABLE = True
     except ImportError:
         OPENTELEMETRY_AVAILABLE = False

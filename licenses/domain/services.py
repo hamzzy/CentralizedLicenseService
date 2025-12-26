@@ -6,7 +6,7 @@ fit within a single entity.
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional, Tuple
 
 from brands.ports.brand_repository import BrandRepository
@@ -49,7 +49,7 @@ class LicenseValidator:
         """
         if not license.is_valid():
             # Check if expired by date (even if status is still VALID)
-            if license.expires_at and license.expires_at < datetime.utcnow():
+            if license.expires_at and license.expires_at < datetime.now(timezone.utc):
                 return False, "License has expired"
             if license.status.value == "expired":
                 return False, "License has expired"

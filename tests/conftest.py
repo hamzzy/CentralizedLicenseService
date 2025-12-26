@@ -3,9 +3,10 @@ Pytest configuration and shared fixtures.
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
+from django.utils import timezone
 from django.test import override_settings
 
 from activations.domain.activation import Activation
@@ -59,6 +60,7 @@ def activation_repository():
 def sample_brand():
     """Fixture for a sample Brand entity."""
     import uuid
+
     # Use unique values to avoid conflicts
     unique_id = str(uuid.uuid4())[:8]
     return Brand.create(
@@ -91,7 +93,7 @@ def sample_license_key(sample_brand):
 @pytest.fixture
 def sample_license(sample_license_key, sample_product):
     """Fixture for a sample License entity."""
-    expires_at = datetime.utcnow() + timedelta(days=365)
+    expires_at = timezone.now() + timedelta(days=365)
     return License.create(
         license_key_id=sample_license_key.id,
         product_id=sample_product.id,
@@ -118,11 +120,12 @@ def db_brand(db, brand_repository):
 
     async def save_brand():
         # Create unique brand for each test to avoid conflicts
-        unique_id = str(uuid.uuid4())[:8]
+        # Use full UUID to ensure uniqueness
+        unique_id = str(uuid.uuid4()).replace("-", "")[:8]
         brand = Brand.create(
             name=f"TestBrand{unique_id}",
             slug=f"testbrand{unique_id}",
-            prefix=f"TB{unique_id[:2]}",
+            prefix=f"TB{unique_id[:6]}",  # Use 6 chars for prefix to reduce collisions
         )
         return await brand_repository.save(brand)
 
@@ -167,7 +170,7 @@ def db_license(db, db_license_key, db_product, license_repository):
     import asyncio
 
     async def save_license():
-        expires_at = datetime.utcnow() + timedelta(days=365)
+        expires_at = timezone.now() + timedelta(days=365)
         license = License.create(
             license_key_id=db_license_key.id,
             product_id=db_product.id,

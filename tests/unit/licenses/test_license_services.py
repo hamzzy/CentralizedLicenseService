@@ -3,7 +3,7 @@ Unit tests for License domain services.
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -17,7 +17,7 @@ class TestLicenseValidator:
 
     def test_validate_valid_license(self):
         """Test validating a valid license."""
-        expires_at = datetime.utcnow() + timedelta(days=365)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=365)
         license = License.create(
             license_key_id=uuid.uuid4(),
             product_id=uuid.uuid4(),
@@ -31,7 +31,7 @@ class TestLicenseValidator:
 
     def test_validate_expired_license(self):
         """Test validating an expired license."""
-        expires_at = datetime.utcnow() - timedelta(days=1)
+        expires_at = datetime.now(timezone.utc) - timedelta(days=1)
         license = License.create(
             license_key_id=uuid.uuid4(),
             product_id=uuid.uuid4(),

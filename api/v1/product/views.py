@@ -7,6 +7,7 @@ These endpoints are used by end-user products to:
 - Deactivate seats
 """
 
+import hashlib
 import uuid
 
 from asgiref.sync import async_to_sync
@@ -147,11 +148,12 @@ class ActivateLicenseView(APIView):
                 span.set_attribute("error", "domain_exception")
                 span.set_attribute("error.type", type(e).__name__)
                 span.set_attribute("error.message", str(e))
-                if hasattr(e, 'code'):
+                if hasattr(e, "code"):
                     span.set_attribute("error.code", str(e.code))
                 import traceback
+
                 try:
-                    tb_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
                     if len(tb_str) > 5000:
                         tb_str = tb_str[:5000] + "... (truncated)"
                     span.set_attribute("error.stack_trace", tb_str)
@@ -164,13 +166,15 @@ class ActivateLicenseView(APIView):
                 span.set_attribute("error.type", type(e).__name__)
                 span.set_attribute("error.message", str(e))
                 import traceback
+
                 try:
-                    tb_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
                     if len(tb_str) > 10000:
                         tb_str = tb_str[:10000] + "... (truncated)"
                     span.set_attribute("error.stack_trace", tb_str)
                 except Exception:
                     pass
+
                 span.set_status(Status(StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
@@ -262,8 +266,19 @@ class GetLicenseStatusView(APIView):
                 span.set_attribute("error", "domain_exception")
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception:
+            except Exception as e:
                 span.set_attribute("error", "internal_error")
+                span.set_attribute("error.type", type(e).__name__)
+                span.set_attribute("error.message", str(e))
+                import traceback
+
+                try:
+                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+                    if len(tb_str) > 10000:
+                        tb_str = tb_str[:10000] + "... (truncated)"
+                    span.set_attribute("error.stack_trace", tb_str)
+                except Exception:
+                    pass
                 span.set_status(Status(StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
@@ -329,7 +344,7 @@ class DeactivateSeatView(APIView):
                 )
 
                 license_repo = DjangoLicenseRepository()
-                license_obj = await license_repo.find(activation.license_id)
+                license_obj = await license_repo.find_by_id(activation.license_id)
                 if not license_obj:
                     span.set_attribute("error", "license_not_found")
                     span.set_status(Status(StatusCode.ERROR, "License not found"))
@@ -373,8 +388,19 @@ class DeactivateSeatView(APIView):
                 span.set_attribute("error", "domain_exception")
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception:
+            except Exception as e:
                 span.set_attribute("error", "internal_error")
+                span.set_attribute("error.type", type(e).__name__)
+                span.set_attribute("error.message", str(e))
+                import traceback
+
+                try:
+                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+                    if len(tb_str) > 10000:
+                        tb_str = tb_str[:10000] + "... (truncated)"
+                    span.set_attribute("error.stack_trace", tb_str)
+                except Exception:
+                    pass
                 span.set_status(Status(StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},

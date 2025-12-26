@@ -94,6 +94,7 @@ class ProvisionLicenseView(APIView):
                 span.set_attribute("error", "validation_failed")
                 span.set_attribute("error.details", str(serializer.errors))
                 span.set_status(Status(StatusCode.ERROR, "Validation failed"))
+                print(f"DEBUG: Validation failed: {serializer.errors}")
                 return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
             # Get brand from request (set by middleware)
@@ -107,67 +108,69 @@ class ProvisionLicenseView(APIView):
             span.set_attribute("brand.name", brand.name)
             span.set_attribute("customer_email", serializer.validated_data["customer_email"])
 
-            try:
-                handler = ProvisionLicenseHandler(
-                    brand_repository=_brand_repo,
-                    product_repository=_product_repo,
-                    license_key_repository=_license_key_repo,
-                    license_repository=_license_repo,
-                )
+        try:
+            handler = ProvisionLicenseHandler(
+                brand_repository=_brand_repo,
+                product_repository=_product_repo,
+                license_key_repository=_license_key_repo,
+                license_repository=_license_repo,
+            )
 
-                command = ProvisionLicenseCommand(
-                    brand_id=brand.id,
-                    customer_email=serializer.validated_data["customer_email"],
-                    products=serializer.validated_data["products"],
-                    expiration_date=serializer.validated_data.get("expiration_date"),
-                    max_seats=serializer.validated_data.get("max_seats", 1),
-                )
+            command = ProvisionLicenseCommand(
+                brand_id=brand.id,
+                customer_email=serializer.validated_data["customer_email"],
+                products=serializer.validated_data["products"],
+                expiration_date=serializer.validated_data.get("expiration_date"),
+                max_seats=serializer.validated_data.get("max_seats", 1),
+            )
 
-                span.set_attribute("products.count", len(serializer.validated_data["products"]))
-                span.set_attribute("max_seats", serializer.validated_data.get("max_seats", 1))
+            span.set_attribute("products.count", len(serializer.validated_data["products"]))
+            span.set_attribute("max_seats", serializer.validated_data.get("max_seats", 1))
 
-                result = await handler.handle(command)
+            result = await handler.handle(command)
 
-                response_serializer = ProvisionLicenseResponseSerializer(result)
-                span.set_attribute("license_key.id", str(result.license_key.id))
-                span.set_attribute("licenses.count", len(result.licenses))
-                span.set_status(Status(StatusCode.OK))
+            response_serializer = ProvisionLicenseResponseSerializer(result)
+            span.set_attribute("license_key.id", str(result.license_key.id))
+            span.set_attribute("licenses.count", len(result.licenses))
+            span.set_status(Status(StatusCode.OK))
 
-                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
-            except DomainException as e:
-                span.set_attribute("error", "domain_exception")
-                span.set_attribute("error.type", type(e).__name__)
-                span.set_attribute("error.message", str(e))
-                if hasattr(e, 'code'):
-                    span.set_attribute("error.code", str(e.code))
+        except DomainException as e:
+            span.set_attribute("error", "domain_exception")
+            span.set_attribute("error.type", type(e).__name__)
+            span.set_attribute("error.message", str(e))
+            if hasattr(e, "code"):
+                span.set_attribute("error.code", str(e.code))
                 import traceback
+
                 try:
-                    tb_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
                     if len(tb_str) > 5000:
                         tb_str = tb_str[:5000] + "... (truncated)"
                     span.set_attribute("error.stack_trace", tb_str)
                 except Exception:
                     pass
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception as e:
-                span.set_attribute("error", "internal_error")
-                span.set_attribute("error.type", type(e).__name__)
-                span.set_attribute("error.message", str(e))
-                import traceback
-                try:
-                    tb_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
-                    if len(tb_str) > 10000:
-                        tb_str = tb_str[:10000] + "... (truncated)"
-                    span.set_attribute("error.stack_trace", tb_str)
-                except Exception:
-                    pass
-                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
-                return Response(
-                    {"error": "Internal server error"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
+            span.set_status(Status(StatusCode.ERROR, str(e)))
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            span.set_attribute("error", "internal_error")
+            span.set_attribute("error.type", type(e).__name__)
+            span.set_attribute("error.message", str(e))
+            import traceback
+
+            try:
+                tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+                if len(tb_str) > 10000:
+                    tb_str = tb_str[:10000] + "... (truncated)"
+                span.set_attribute("error.stack_trace", tb_str)
+            except Exception:
+                pass
+            span.set_status(Status(StatusCode.ERROR, "Internal server error"))
+        return Response(
+            {"error": "Internal server error"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 class RenewLicenseView(APIView):
@@ -369,8 +372,19 @@ class ResumeLicenseView(APIView):
                 span.set_attribute("error", "domain_exception")
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception:
+            except Exception as e:
                 span.set_attribute("error", "internal_error")
+                span.set_attribute("error.type", type(e).__name__)
+                span.set_attribute("error.message", str(e))
+                import traceback
+
+                try:
+                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+                    if len(tb_str) > 10000:
+                        tb_str = tb_str[:10000] + "... (truncated)"
+                    span.set_attribute("error.stack_trace", tb_str)
+                except Exception:
+                    pass
                 span.set_status(Status(StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
@@ -440,8 +454,19 @@ class CancelLicenseView(APIView):
                 span.set_attribute("error", "domain_exception")
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception:
+            except Exception as e:
                 span.set_attribute("error", "internal_error")
+                span.set_attribute("error.type", type(e).__name__)
+                span.set_attribute("error.message", str(e))
+                import traceback
+
+                try:
+                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+                    if len(tb_str) > 10000:
+                        tb_str = tb_str[:10000] + "... (truncated)"
+                    span.set_attribute("error.stack_trace", tb_str)
+                except Exception:
+                    pass
                 span.set_status(Status(StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},

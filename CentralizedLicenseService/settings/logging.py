@@ -16,15 +16,16 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
     def add_fields(self, log_record, record, message_dict):
         """Add custom fields to log record."""
         super().add_fields(log_record, record, message_dict)
-        
+
         # Add trace context if available
         try:
             from opentelemetry import trace
+
             span = trace.get_current_span()
             if span and span.get_span_context().is_valid:
                 trace_context = span.get_span_context()
-                log_record['trace_id'] = format(trace_context.trace_id, '032x')
-                log_record['span_id'] = format(trace_context.span_id, '016x')
+                log_record["trace_id"] = format(trace_context.trace_id, "032x")
+                log_record["span_id"] = format(trace_context.span_id, "016x")
         except Exception:
             pass
 
@@ -32,15 +33,15 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
 def get_logging_config(environment: str = "development") -> dict:
     """
     Get logging configuration for the application.
-    
+
     Args:
         environment: Environment name (development, production, test)
-    
+
     Returns:
         Django logging configuration dictionary
     """
     log_level = "DEBUG" if environment == "development" else "INFO"
-    
+
     return {
         "version": 1,
         "disable_existing_loggers": False,
@@ -125,4 +126,3 @@ def get_logging_config(environment: str = "development") -> dict:
             },
         },
     }
-

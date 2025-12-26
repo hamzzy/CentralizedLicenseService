@@ -19,7 +19,9 @@ if DATABASE_URL and DATABASE_URL.startswith("postgresql"):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": parsed.path[1:] if parsed.path.startswith("/") else parsed.path,  # Remove leading '/'
+            "NAME": (
+                parsed.path[1:] if parsed.path.startswith("/") else parsed.path
+            ),  # Remove leading '/'
             "USER": parsed.username or "postgres",
             "PASSWORD": parsed.password or "",
             "HOST": parsed.hostname or "localhost",

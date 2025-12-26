@@ -7,7 +7,7 @@ It contains business logic and is independent of infrastructure.
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from core.domain.value_objects import LicenseStatus
@@ -62,7 +62,7 @@ class License:
         Returns:
             License entity instance
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         return cls(
             id=license_id or uuid.uuid4(),
             license_key_id=license_key_id,
@@ -87,7 +87,7 @@ class License:
         if self.status != LicenseStatus.VALID:
             return False
         if self.expires_at:
-            check_time = current_time or datetime.utcnow()
+            check_time = current_time or datetime.now(timezone.utc)
             if self.expires_at < check_time:
                 return False
         return True
@@ -102,7 +102,7 @@ class License:
         Returns:
             New License instance with updated expiration
         """
-        if new_expiration < datetime.utcnow():
+        if new_expiration < datetime.now(timezone.utc):
             raise ValueError("Expiration date cannot be in the past")
 
         new_status = LicenseStatus.VALID if self.status == LicenseStatus.EXPIRED else self.status
@@ -115,7 +115,7 @@ class License:
             seat_limit=self.seat_limit,
             expires_at=new_expiration,
             created_at=self.created_at,
-            updated_at=datetime.utcnow(),
+            updated_at=datetime.now(timezone.utc),
         )
 
     def suspend(self) -> "License":
@@ -136,7 +136,7 @@ class License:
             seat_limit=self.seat_limit,
             expires_at=self.expires_at,
             created_at=self.created_at,
-            updated_at=datetime.utcnow(),
+            updated_at=datetime.now(timezone.utc),
         )
 
     def resume(self) -> "License":
@@ -157,7 +157,7 @@ class License:
             seat_limit=self.seat_limit,
             expires_at=self.expires_at,
             created_at=self.created_at,
-            updated_at=datetime.utcnow(),
+            updated_at=datetime.now(timezone.utc),
         )
 
     def cancel(self) -> "License":
@@ -175,7 +175,7 @@ class License:
             seat_limit=self.seat_limit,
             expires_at=self.expires_at,
             created_at=self.created_at,
-            updated_at=datetime.utcnow(),
+            updated_at=datetime.now(timezone.utc),
         )
 
     def mark_expired(self) -> "License":
@@ -193,5 +193,5 @@ class License:
             seat_limit=self.seat_limit,
             expires_at=self.expires_at,
             created_at=self.created_at,
-            updated_at=datetime.utcnow(),
+            updated_at=datetime.now(timezone.utc),
         )

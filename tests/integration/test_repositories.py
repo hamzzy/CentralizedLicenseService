@@ -3,9 +3,10 @@ Integration tests for repository implementations.
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
+from django.utils import timezone
 
 from activations.domain.activation import Activation
 from brands.domain.brand import Brand
@@ -32,7 +33,7 @@ class TestBrandRepository:
         saved = await brand_repository.save(brand)
         assert saved.id is not None
 
-        found = await brand_repository.find(saved.id)
+        found = await brand_repository.find_by_id(saved.id)
         assert found is not None
         assert found.name == "Test Brand"
         assert found.slug.value == "test-brand"
@@ -40,13 +41,14 @@ class TestBrandRepository:
     @pytest.mark.asyncio
     async def test_find_not_found(self, brand_repository):
         """Test finding non-existent brand."""
-        found = await brand_repository.find(uuid.uuid4())
+        found = await brand_repository.find_by_id(uuid.uuid4())
         assert found is None
 
     @pytest.mark.asyncio
     async def test_exists(self, brand_repository):
         """Test checking brand existence."""
         import uuid
+
         unique_id = str(uuid.uuid4())[:8]
         brand = Brand.create(
             name=f"Test Brand {unique_id}",
@@ -75,7 +77,7 @@ class TestLicenseRepository:
         db_product,
     ):
         """Test saving and finding a license."""
-        expires_at = datetime.utcnow() + timedelta(days=365)
+        expires_at = timezone.now() + timedelta(days=365)
         license = License.create(
             license_key_id=db_license_key.id,
             product_id=db_product.id,
@@ -86,7 +88,7 @@ class TestLicenseRepository:
         saved = await license_repository.save(license)
         assert saved.id is not None
 
-        found = await license_repository.find(saved.id)
+        found = await license_repository.find_by_id(saved.id)
         assert found is not None
         assert found.seat_limit == 10
 
@@ -98,7 +100,7 @@ class TestLicenseRepository:
         db_product,
     ):
         """Test finding licenses by license key."""
-        expires_at = datetime.utcnow() + timedelta(days=365)
+        expires_at = timezone.now() + timedelta(days=365)
         license1 = License.create(
             license_key_id=db_license_key.id,
             product_id=db_product.id,
@@ -127,7 +129,7 @@ class TestActivationRepository:
         saved = await activation_repository.save(activation)
         assert saved.id is not None
 
-        found = await activation_repository.find(saved.id)
+        found = await activation_repository.find_by_id(saved.id)
         assert found is not None
         assert found.instance_identifier.value == "https://test.com"
 
@@ -148,7 +150,7 @@ class TestActivationRepository:
         await activation_repository.save(activation1)
         await activation_repository.save(activation2)
 
-        activations = await activation_repository.find_by_license(db_license.id)
+        activations = await activation_repository.find_all_by_license(db_license.id)
         assert len(activations) >= 2
 
     @pytest.mark.asyncio
@@ -161,6 +163,8 @@ class TestActivationRepository:
         )
         await activation_repository.save(activation)
 
-        found = await activation_repository.find_by_instance(db_license.id, "https://unique.com")
+        found = await activation_repository.find_by_license_and_instance(
+            db_license.id, "https://unique.com"
+        )
         assert found is not None
         assert found.instance_identifier.value == "https://unique.com"

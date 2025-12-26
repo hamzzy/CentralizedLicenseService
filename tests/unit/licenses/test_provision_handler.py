@@ -13,6 +13,7 @@ from licenses.application.commands.provision_license import ProvisionLicenseComm
 from licenses.application.handlers.provision_license_handler import ProvisionLicenseHandler
 
 
+@pytest.mark.django_db
 @pytest.mark.asyncio
 class TestProvisionLicenseHandler:
     """Tests for ProvisionLicenseHandler."""

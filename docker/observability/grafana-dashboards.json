@@ -334,8 +334,8 @@
               "steps": [
                 {"value": 0, "color": "green"},
                 {"value": 1, "color": "red"}
-              ]
-            }
+        ]
+      }
           }
         }
       }

@@ -3,7 +3,7 @@ Unit tests for License domain entity.
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -18,7 +18,7 @@ class TestLicenseEntity:
         """Test creating a license entity."""
         license_key_id = uuid.uuid4()
         product_id = uuid.uuid4()
-        expires_at = datetime.utcnow() + timedelta(days=365)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=365)
 
         license = License.create(
             license_key_id=license_key_id,
@@ -44,7 +44,7 @@ class TestLicenseEntity:
 
     def test_is_valid_valid_license(self):
         """Test is_valid for valid license."""
-        expires_at = datetime.utcnow() + timedelta(days=365)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=365)
         license = License.create(
             license_key_id=uuid.uuid4(),
             product_id=uuid.uuid4(),
@@ -55,7 +55,7 @@ class TestLicenseEntity:
 
     def test_is_valid_expired_license(self):
         """Test is_valid for expired license."""
-        expires_at = datetime.utcnow() - timedelta(days=1)
+        expires_at = datetime.now(timezone.utc) - timedelta(days=1)
         license = License.create(
             license_key_id=uuid.uuid4(),
             product_id=uuid.uuid4(),
@@ -77,14 +77,14 @@ class TestLicenseEntity:
 
     def test_renew_license(self):
         """Test renewing a license."""
-        expires_at = datetime.utcnow() + timedelta(days=30)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=30)
         license = License.create(
             license_key_id=uuid.uuid4(),
             product_id=uuid.uuid4(),
             expires_at=expires_at,
         )
 
-        new_expiration = datetime.utcnow() + timedelta(days=365)
+        new_expiration = datetime.now(timezone.utc) + timedelta(days=365)
         renewed = license.renew(new_expiration)
 
         assert renewed.expires_at == new_expiration
@@ -92,7 +92,7 @@ class TestLicenseEntity:
 
     def test_renew_expired_license(self):
         """Test renewing an expired license."""
-        expires_at = datetime.utcnow() - timedelta(days=1)
+        expires_at = datetime.now(timezone.utc) - timedelta(days=1)
         license = License.create(
             license_key_id=uuid.uuid4(),
             product_id=uuid.uuid4(),
@@ -100,7 +100,7 @@ class TestLicenseEntity:
         )
         expired = license.mark_expired()
 
-        new_expiration = datetime.utcnow() + timedelta(days=365)
+        new_expiration = datetime.now(timezone.utc) + timedelta(days=365)
         renewed = expired.renew(new_expiration)
 
         assert renewed.status == LicenseStatus.VALID
@@ -112,7 +112,7 @@ class TestLicenseEntity:
             product_id=uuid.uuid4(),
         )
 
-        past_date = datetime.utcnow() - timedelta(days=1)
+        past_date = datetime.now(timezone.utc) - timedelta(days=1)
         with pytest.raises(ValueError, match="cannot be in the past"):
             license.renew(past_date)
 
