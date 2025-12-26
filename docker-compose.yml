@@ -11,6 +11,13 @@ services:
       - .:/app
     environment:
       - DJANGO_SETTINGS_MODULE=CentralizedLicenseService.settings.dev
+      - DOCKER_ENV=1
+      - DB_HOST=db
+      - DB_NAME=license_service
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
     depends_on:
       - db
       - redis

@@ -162,10 +162,14 @@ SPECTACULAR_SETTINGS = {
 # Redis Cache
 import os
 
+# In Docker, use service name 'redis', locally use '127.0.0.1'
+default_redis_url = (
+    "redis://redis:6379/0" if os.environ.get("DOCKER_ENV") else "redis://127.0.0.1:6379/1"
+)
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/1"),
+        "LOCATION": os.environ.get("REDIS_URL", default_redis_url),
         "OPTIONS": {
             "socket_connect_timeout": 5,
             "socket_timeout": 5,

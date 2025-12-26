@@ -21,13 +21,15 @@ if os.environ.get("DB_ENGINE") == "sqlite":
     }
 else:
     # Use PostgreSQL from docker-compose
+    # In Docker, use service name 'db', locally use 'localhost'
+    default_host = "db" if os.environ.get("DOCKER_ENV") else "localhost"
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
             "NAME": os.environ.get("DB_NAME", "license_service"),
             "USER": os.environ.get("DB_USER", "postgres"),
             "PASSWORD": os.environ.get("DB_PASSWORD", "postgres"),
-            "HOST": os.environ.get("DB_HOST", "localhost"),
+            "HOST": os.environ.get("DB_HOST", default_host),
             "PORT": os.environ.get("DB_PORT", "5432"),
         }
     }
