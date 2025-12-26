@@ -281,7 +281,9 @@ class Command(BaseCommand):
             self.stdout.write("\n🔑 API Key:")
             self.stdout.write(f"   {raw_key}")
             # pylint: disable=no-member
-            self.stdout.write(self.style.WARNING("   ⚠️  Save this - it cannot be retrieved later!"))
+            self.stdout.write(
+                self.style.WARNING("   ⚠️  Save this - it cannot be retrieved later!")
+            )
         else:
             self.stdout.write("\n🔑 API Key:")
             self.stdout.write(
