@@ -31,6 +31,17 @@ INSTALLED_APPS = [
     "api",
 ]
 
+# Register event handlers at startup
+try:
+    from core.infrastructure.event_handlers import register_event_handlers
+
+    register_event_handlers()
+except Exception as e:
+    import logging
+
+    logger = logging.getLogger(__name__)
+    logger.warning(f"Failed to register event handlers: {e}")
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

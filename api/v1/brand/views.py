@@ -143,7 +143,10 @@ async def renew_license(request: Request, license_id: uuid.UUID) -> Response:
         )
 
     try:
-        handler = RenewLicenseHandler(license_repository=_license_repo)
+        handler = RenewLicenseHandler(
+            license_repository=_license_repo,
+            license_key_repository=_license_key_repo,
+        )
 
         command = RenewLicenseCommand(
             license_id=license_id,
@@ -182,7 +185,10 @@ async def suspend_license(request: Request, license_id: uuid.UUID) -> Response:
         )
 
     try:
-        handler = SuspendLicenseHandler(license_repository=_license_repo)
+        handler = SuspendLicenseHandler(
+            license_repository=_license_repo,
+            license_key_repository=_license_key_repo,
+        )
 
         command = SuspendLicenseCommand(
             license_id=license_id,
@@ -221,7 +227,10 @@ async def resume_license(request: Request, license_id: uuid.UUID) -> Response:
         )
 
     try:
-        handler = ResumeLicenseHandler(license_repository=_license_repo)
+        handler = ResumeLicenseHandler(
+            license_repository=_license_repo,
+            license_key_repository=_license_key_repo,
+        )
 
         command = ResumeLicenseCommand(license_id=license_id)
 
@@ -257,7 +266,10 @@ async def cancel_license(request: Request, license_id: uuid.UUID) -> Response:
         )
 
     try:
-        handler = CancelLicenseHandler(license_repository=_license_repo)
+        handler = CancelLicenseHandler(
+            license_repository=_license_repo,
+            license_key_repository=_license_key_repo,
+        )
 
         command = CancelLicenseCommand(
             license_id=license_id,
