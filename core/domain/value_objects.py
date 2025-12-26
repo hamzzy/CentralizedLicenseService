@@ -6,6 +6,7 @@ rather than their identity. They have no identity and are compared by value.
 """
 from abc import ABC
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional
 
 
@@ -79,3 +80,15 @@ class ProductSlug(ValueObject):
         """Return slug as string."""
         return self.value
 
+
+class LicenseStatus(Enum):
+    """License status value object."""
+
+    VALID = "valid"
+    SUSPENDED = "suspended"
+    CANCELLED = "cancelled"
+    EXPIRED = "expired"
+
+    def __str__(self) -> str:
+        """Return status as string."""
+        return self.value
