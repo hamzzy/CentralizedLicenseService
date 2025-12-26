@@ -9,8 +9,8 @@ from typing import List, Optional
 from asgiref.sync import sync_to_async
 
 from brands.domain.product import Product
-from brands.infrastructure.models import Product as ProductModel
 from brands.ports.product_repository import ProductRepository
+from products.infrastructure.models import Product as ProductModel
 
 
 class DjangoProductRepository(ProductRepository):
