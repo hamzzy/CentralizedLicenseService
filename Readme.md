@@ -169,8 +169,22 @@ docker-compose exec app python manage.py migrate
 
 - API: http://localhost:8000
 - Admin: http://localhost:8000/admin
+- Swagger UI: http://localhost:8000/api/docs/
+- ReDoc: http://localhost:8000/api/redoc/
+- OpenAPI Schema: http://localhost:8000/api/schema/
 
 ## API Documentation
+
+### Interactive API Documentation
+
+The service provides interactive API documentation via Swagger UI and ReDoc:
+
+- **Swagger UI**: http://localhost:8000/api/docs/
+- **ReDoc**: http://localhost:8000/api/redoc/
+- **OpenAPI Schema (JSON)**: http://localhost:8000/api/schema/
+
+The OpenAPI schema is automatically generated from your Django REST Framework views
+and serializers using `drf-spectacular`.
 
 ### Authentication
 
