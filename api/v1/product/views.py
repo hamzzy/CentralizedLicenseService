@@ -276,7 +276,7 @@ class DeactivateSeatView(APIView):
                     {"error": {"code": "ACTIVATION_NOT_FOUND", "message": "Activation not found"}},
                     status=status.HTTP_404_NOT_FOUND,
                 )
-                if hasattr(request, 'trace_id') and request.trace_id:
+                if hasattr(request, "trace_id") and request.trace_id:
                     response["X-Trace-ID"] = request.trace_id
                 return response
 
@@ -289,7 +289,7 @@ class DeactivateSeatView(APIView):
                     {"error": {"code": "LICENSE_NOT_FOUND", "message": "License not found"}},
                     status=status.HTTP_404_NOT_FOUND,
                 )
-                if hasattr(request, 'trace_id') and request.trace_id:
+                if hasattr(request, "trace_id") and request.trace_id:
                     response["X-Trace-ID"] = request.trace_id
                 return response
 
@@ -298,10 +298,15 @@ class DeactivateSeatView(APIView):
                 span.set_attribute("error", "license_key_mismatch")
                 span.set_status(Status(StatusCode.ERROR, "License key mismatch"))
                 response = Response(
-                    {"error": {"code": "FORBIDDEN", "message": "License key does not match activation"}},
+                    {
+                        "error": {
+                            "code": "FORBIDDEN",
+                            "message": "License key does not match activation",
+                        }
+                    },
                     status=status.HTTP_403_FORBIDDEN,
                 )
-                if hasattr(request, 'trace_id') and request.trace_id:
+                if hasattr(request, "trace_id") and request.trace_id:
                     response["X-Trace-ID"] = request.trace_id
                 return response
 

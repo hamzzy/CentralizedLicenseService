@@ -101,9 +101,7 @@ class TracingMiddleware:
                 for key, value in list(query_params.items())[:10]:
                     # Skip sensitive params
                     if key not in ["password", "secret", "token"]:
-                        param_value = (
-                            value[0] if isinstance(value, list) else value
-                        )
+                        param_value = value[0] if isinstance(value, list) else value
                         attr_key = f"http.request.query.{key}"
                         span.set_attribute(attr_key, str(param_value))
 
@@ -158,10 +156,10 @@ class TracingMiddleware:
                 span.set_attribute(email_attr, email)
 
             # Store trace_id on request for error responses (Tempo integration)
-            if hasattr(span, 'get_span_context') and callable(span.get_span_context):
+            if hasattr(span, "get_span_context") and callable(span.get_span_context):
                 trace_context = span.get_span_context()
-                if trace_context and hasattr(trace_context, 'trace_id'):
-                    trace_id_hex = format(trace_context.trace_id, '032x')
+                if trace_context and hasattr(trace_context, "trace_id"):
+                    trace_id_hex = format(trace_context.trace_id, "032x")
                     request.trace_id = trace_id_hex
 
             # Process request
@@ -186,21 +184,16 @@ class TracingMiddleware:
                 # Add response body (for all responses, more detail for errors)
                 try:
                     if hasattr(response, "content") and response.content:
-                        response_body = response.content.decode(
-                            "utf-8", errors="ignore"
-                        )
+                        response_body = response.content.decode("utf-8", errors="ignore")
                         # For successful responses, limit size more
-                        max_size = (
-                            10000 if response.status_code >= 400 else 2000
-                        )
+                        max_size = 10000 if response.status_code >= 400 else 2000
                         if len(response_body) > max_size:
                             truncated = "... (truncated)"
-                            response_body = (
-                                response_body[:max_size] + truncated
-                            )
+                            response_body = response_body[:max_size] + truncated
 
                         # Sanitize response body
                         import json
+
                         try:
                             body_json = json.loads(response_body)
                             sanitized = self._sanitize_dict(body_json)
@@ -217,35 +210,25 @@ class TracingMiddleware:
                                         code = error_info.get("code", "")
                                         error_code = str(code)
                                         code_attr = "error.code"
-                                        span.set_attribute(
-                                            code_attr, error_code
-                                        )
+                                        span.set_attribute(code_attr, error_code)
                                         msg = error_info.get("message", "")
                                         error_msg = str(msg)
                                         msg_attr = "error.message"
-                                        span.set_attribute(
-                                            msg_attr, error_msg
-                                        )
+                                        span.set_attribute(msg_attr, error_msg)
                                         # Add error type if available
                                         if "type" in error_info:
                                             err_type = error_info.get("type")
                                             error_type = str(err_type)
-                                            span.set_attribute(
-                                                "error.type", error_type
-                                            )
+                                            span.set_attribute("error.type", error_type)
                         except (json.JSONDecodeError, ValueError):
                             # Not JSON, just store sanitized string
                             body_attr = "http.response.body"
-                            span.set_attribute(
-                                body_attr, response_body[:max_size]
-                            )
+                            span.set_attribute(body_attr, response_body[:max_size])
                 except Exception:
                     pass
 
                 # Add request status information
-                request_status = (
-                    "success" if response.status_code < 400 else "error"
-                )
+                request_status = "success" if response.status_code < 400 else "error"
                 if response.status_code >= 500:
                     request_status = "server_error"
                 elif response.status_code >= 400:
@@ -288,11 +271,7 @@ class TracingMiddleware:
                 import traceback
 
                 try:
-                    tb_str = "".join(
-                        traceback.format_exception(
-                            type(e), e, e.__traceback__
-                        )
-                    )
+                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
                     # Limit stack trace size
                     if len(tb_str) > 10000:
                         tb_str = tb_str[:10000] + "... (truncated)"

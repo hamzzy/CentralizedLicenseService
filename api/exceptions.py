@@ -14,12 +14,12 @@ from rest_framework.response import Response
 from rest_framework.views import exception_handler
 
 from core.domain.exceptions import (
-    DomainException,
-    LicenseNotFoundError,
-    BrandNotFoundError,
     ActivationNotFoundError,
-    InvalidLicenseKeyError,
+    BrandNotFoundError,
+    DomainException,
     InvalidAPIKeyError,
+    InvalidLicenseKeyError,
+    LicenseNotFoundError,
 )
 
 logger = logging.getLogger(__name__)
@@ -78,33 +78,33 @@ def custom_exception_handler(exc: Exception, context: Dict[str, Any]) -> Respons
     # Handle domain exceptions
     if isinstance(exc, DomainException):
         status_code = status.HTTP_400_BAD_REQUEST
-        
+
         # Map specific exceptions to status codes
         if isinstance(exc, (LicenseNotFoundError, BrandNotFoundError, ActivationNotFoundError)):
             status_code = status.HTTP_404_NOT_FOUND
         elif isinstance(exc, (InvalidLicenseKeyError, InvalidAPIKeyError)):
             status_code = status.HTTP_401_UNAUTHORIZED
-            
+
         logger.warning(
             f"Domain exception: {exc.code} - {exc.message}",
             extra={"trace_id": trace_id},
         )
-        
+
         # Error body never includes trace_id (always in header)
         error_data = {
             "code": exc.code,
             "message": exc.message,
         }
-        
+
         response = Response(
             {"error": error_data},
             status=status_code,
         )
-        
+
         # Always add trace_id to headers
         if trace_id:
             response["X-Trace-ID"] = trace_id
-        
+
         return response
 
     # Handle API exceptions
@@ -112,15 +112,19 @@ def custom_exception_handler(exc: Exception, context: Dict[str, Any]) -> Respons
         response = exception_handler(exc, context)
         if response:
             error_data = {
-                "code": exc.default_code.upper().replace("-", "_") if hasattr(exc, 'default_code') else "API_ERROR",
+                "code": (
+                    exc.default_code.upper().replace("-", "_")
+                    if hasattr(exc, "default_code")
+                    else "API_ERROR"
+                ),
                 "message": response.data.get("detail", exc.default_detail),
             }
-            
+
             response.data = {"error": error_data}
-            
+
             if trace_id:
                 response["X-Trace-ID"] = trace_id
-            
+
             return response
 
     # Handle 404
@@ -129,15 +133,15 @@ def custom_exception_handler(exc: Exception, context: Dict[str, Any]) -> Respons
             "code": "NOT_FOUND",
             "message": "Resource not found",
         }
-        
+
         response = Response(
             {"error": error_data},
             status=status.HTTP_404_NOT_FOUND,
         )
-        
+
         if trace_id:
             response["X-Trace-ID"] = trace_id
-        
+
         return response
 
     # Handle unexpected errors
@@ -154,12 +158,12 @@ def custom_exception_handler(exc: Exception, context: Dict[str, Any]) -> Respons
             "code": "INTERNAL_ERROR",
             "message": "An internal error occurred",
         }
-        
+
         response.data = {"error": error_data}
-        
+
         if trace_id:
             response["X-Trace-ID"] = trace_id
-        
+
         return response
 
     # Fallback for unhandled exceptions
@@ -167,13 +171,13 @@ def custom_exception_handler(exc: Exception, context: Dict[str, Any]) -> Respons
         "code": "INTERNAL_ERROR",
         "message": "An internal error occurred",
     }
-    
+
     response = Response(
         {"error": error_data},
         status=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
-    
+
     if trace_id:
         response["X-Trace-ID"] = trace_id
-    
+
     return response

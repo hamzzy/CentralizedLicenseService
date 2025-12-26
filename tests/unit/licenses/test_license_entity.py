@@ -114,7 +114,9 @@ class TestLicenseEntity:
         )
 
         past_date = datetime.now(timezone.utc) - timedelta(days=1)
-        with pytest.raises(InvalidLicenseStatusError, match="Expiration date cannot be in the past"):
+        with pytest.raises(
+            InvalidLicenseStatusError, match="Expiration date cannot be in the past"
+        ):
             license.renew(past_date)
 
     def test_suspend_license(self):

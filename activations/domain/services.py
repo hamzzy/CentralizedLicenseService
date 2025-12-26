@@ -10,16 +10,16 @@ from typing import Optional, Tuple
 
 from activations.domain.activation import Activation
 from activations.ports.activation_repository import ActivationRepository
-from licenses.domain.license import License
-from licenses.ports.license_repository import LicenseRepository
 from core.domain.exceptions import (
     DomainException,
+    InvalidLicenseStatusError,
+    LicenseCancelledError,
     LicenseExpiredError,
     LicenseSuspendedError,
-    LicenseCancelledError,
     SeatLimitExceededError,
-    InvalidLicenseStatusError,
 )
+from licenses.domain.license import License
+from licenses.ports.license_repository import LicenseRepository
 
 
 class SeatManager:

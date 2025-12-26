@@ -182,9 +182,7 @@ class RenewLicenseView(APIView):
                 expiration_date=serializer.validated_data["expiration_date"],
             )
 
-            span.set_attribute(
-                "expiration_date", str(serializer.validated_data["expiration_date"])
-            )
+            span.set_attribute("expiration_date", str(serializer.validated_data["expiration_date"]))
 
             await handler.handle(command)
 
