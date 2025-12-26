@@ -69,14 +69,12 @@ class LicenseCacheInvalidationHandler(EventHandler):
         Args:
             event: Domain event
         """
-        from licenses.application.services.license_cache_service import (
-            LicenseCacheService,
+        from licenses.application.services.license_cache_service import LicenseCacheService
+        from licenses.infrastructure.repositories.django_license_key_repository import (  # noqa: E501
+            DjangoLicenseKeyRepository,
         )
         from licenses.infrastructure.repositories.django_license_repository import (  # noqa: E501
             DjangoLicenseRepository,
-        )
-        from licenses.infrastructure.repositories.django_license_key_repository import (  # noqa: E501
-            DjangoLicenseKeyRepository,
         )
 
         license_repo = DjangoLicenseRepository()

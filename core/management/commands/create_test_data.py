@@ -161,9 +161,7 @@ class Command(BaseCommand):
 
         # pylint: disable=no-member
         self.stdout.write(
-            self.style.SUCCESS(
-                f"✅ Created brand: {brand.name} " f"(slug: {slug}, prefix: {prefix})"
-            )
+            self.style.SUCCESS(f"✅ Created brand: {brand.name} (slug: {slug}, prefix: {prefix})")
         )
         return brand
 

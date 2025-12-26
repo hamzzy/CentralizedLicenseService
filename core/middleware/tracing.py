@@ -190,6 +190,7 @@ class TracingMiddleware:
     def _handle_exception(self, span, _request, e: Exception, duration: float):
         """Handle exception and update span."""
         import traceback
+
         from core.instrumentation import Status, StatusCode
 
         span.set_attribute("http.duration_ms", round(duration * 1000, 2))
