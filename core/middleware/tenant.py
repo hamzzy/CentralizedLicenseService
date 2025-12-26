@@ -74,7 +74,9 @@ class TenantMiddleware:
                 # Look up brand by API key hash
                 import hashlib
                 api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
-                api_key_obj = ApiKey.objects.filter(key_hash=api_key_hash).first()
+                api_key_obj = ApiKey.objects.filter(
+                    key_hash=api_key_hash,
+                ).first()
                 if api_key_obj and api_key_obj.is_valid():
                     tenant_id = api_key_obj.brand.id
                     logger.debug(

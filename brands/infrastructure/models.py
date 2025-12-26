@@ -75,7 +75,8 @@ class Brand(models.Model):
             ApiKey instance with _raw_key attribute set
         """
         return ApiKey.objects.create(
-            brand=self, scope=scope
+            brand=self,
+            scope=scope,
         )
 
 
@@ -125,7 +126,7 @@ class ApiKey(models.Model):
             raw_key = secrets.token_urlsafe(32)
             self.key_prefix = raw_key[:8]
             self.key_hash = hashlib.sha256(
-                raw_key.encode()
+                raw_key.encode(),
             ).hexdigest()
             # Store the raw key temporarily for retrieval
             self._raw_key = raw_key
