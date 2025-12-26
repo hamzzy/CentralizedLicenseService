@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     # Local apps
     "core",
     "brands",
+    "products",
     "licenses",
     "activations",
     "api",
@@ -75,6 +76,9 @@ DATABASES = {
         "PASSWORD": "postgres",
         "HOST": "localhost",
         "PORT": "5432",
+        "OPTIONS": {
+            "connect_timeout": 10,
+        },
     }
 }
 
@@ -123,10 +127,16 @@ REST_FRAMEWORK = {
 }
 
 # Redis Cache
+import os
+
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+        "LOCATION": os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/1"),
+        "OPTIONS": {
+            "socket_connect_timeout": 5,
+            "socket_timeout": 5,
+        },
     }
 }
 

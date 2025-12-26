@@ -12,9 +12,9 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.deprecation import MiddlewareMixin
 
 try:
-    from brands.infrastructure.models import Brand
+    from brands.infrastructure.models import ApiKey
 except ImportError:
-    Brand = None
+    ApiKey = None
 
 try:
     from licenses.infrastructure.models import LicenseKey
@@ -98,21 +98,29 @@ class APIKeyAuthenticationMiddleware(MiddlewareMixin):
                 status=401,
             )
 
-        if not Brand:
-            return JsonResponse({"error": "Brand model not available"}, status=503)
+        if not ApiKey:
+            return JsonResponse({"error": "ApiKey model not available"}, status=503)
 
         # Hash the API key for comparison
-        # Note: In production, use proper password hashing (bcrypt, argon2)
         api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
 
         try:
-            brand = Brand.objects.filter(api_key_hash=api_key_hash).first()
-            if not brand:
+            api_key_obj = ApiKey.objects.filter(key_hash=api_key_hash).first()
+            if not api_key_obj:
                 logger.warning(f"Invalid API key attempted: {api_key[:8]}...")
                 return JsonResponse({"error": "Invalid API key"}, status=401)
 
-            # Store brand in request for use in views
-            request.brand = brand  # type: ignore
+            # Check if API key is valid (not expired)
+            if not api_key_obj.is_valid():
+                logger.warning(f"Expired API key attempted: {api_key[:8]}...")
+                return JsonResponse({"error": "API key expired"}, status=401)
+
+            # Mark API key as used
+            api_key_obj.mark_used()
+
+            # Store brand and API key in request for use in views
+            request.brand = api_key_obj.brand  # type: ignore
+            request.api_key = api_key_obj  # type: ignore
             return None
 
         except Exception as e:

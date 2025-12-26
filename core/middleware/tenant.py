@@ -12,10 +12,10 @@ from django.http import HttpRequest, HttpResponse
 from django.utils.functional import SimpleLazyObject
 
 try:
-    from brands.infrastructure.models import Brand
+    from brands.infrastructure.models import ApiKey
 except ImportError:
     # Placeholder for when models are not yet created
-    Brand = None
+    ApiKey = None
 
 logger = logging.getLogger(__name__)
 
@@ -65,13 +65,14 @@ class TenantMiddleware:
 
         tenant_id = None
 
-        if api_key and Brand:
+        if api_key and ApiKey:
             try:
-                # Look up brand by API key
-                # Note: In production, API keys should be hashed
-                brand = Brand.objects.filter(api_key_hash=api_key).first()
-                if brand:
-                    tenant_id = brand.id
+                # Look up brand by API key hash
+                import hashlib
+                api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+                api_key_obj = ApiKey.objects.filter(key_hash=api_key_hash).first()
+                if api_key_obj and api_key_obj.is_valid():
+                    tenant_id = api_key_obj.brand.id
                     logger.debug(f"Tenant context set to brand_id={tenant_id}")
             except Exception as e:
                 logger.warning(f"Error looking up tenant: {e}")
