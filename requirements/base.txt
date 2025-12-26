@@ -22,6 +22,6 @@ opentelemetry-instrumentation-psycopg2==0.45b0
 opentelemetry-instrumentation-redis==0.45b0
 opentelemetry-instrumentation-requests==0.45b0
 opentelemetry-exporter-otlp==1.24.0
-opentelemetry-exporter-prometheus==1.24.0
+# Note: opentelemetry-exporter-prometheus is not needed as we use prometheus-client directly
 prometheus-client==0.20.0
 
