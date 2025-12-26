@@ -11,7 +11,11 @@ from typing import Callable
 from django.http import HttpRequest, HttpResponse
 from django.utils.functional import SimpleLazyObject
 
-from brands.infrastructure.models import Brand
+try:
+    from brands.infrastructure.models import Brand
+except ImportError:
+    # Placeholder for when models are not yet created
+    Brand = None
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +65,7 @@ class TenantMiddleware:
 
         tenant_id = None
 
-        if api_key:
+        if api_key and Brand:
             try:
                 # Look up brand by API key
                 # Note: In production, API keys should be hashed

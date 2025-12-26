@@ -11,8 +11,15 @@ from typing import Callable, Optional
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.deprecation import MiddlewareMixin
 
-from brands.infrastructure.models import Brand
-from licenses.infrastructure.models import LicenseKey
+try:
+    from brands.infrastructure.models import Brand
+except ImportError:
+    Brand = None
+
+try:
+    from licenses.infrastructure.models import LicenseKey
+except ImportError:
+    LicenseKey = None
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +98,9 @@ class APIKeyAuthenticationMiddleware(MiddlewareMixin):
                 status=401,
             )
 
+        if not Brand:
+            return JsonResponse({"error": "Brand model not available"}, status=503)
+
         # Hash the API key for comparison
         # Note: In production, use proper password hashing (bcrypt, argon2)
         api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
@@ -131,6 +141,9 @@ class APIKeyAuthenticationMiddleware(MiddlewareMixin):
                 {"error": "Missing license key. Provide X-License-Key header or license_key query param."},
                 status=401,
             )
+
+        if not LicenseKey:
+            return JsonResponse({"error": "LicenseKey model not available"}, status=503)
 
         # Hash the license key for comparison
         license_key_hash = hashlib.sha256(license_key.encode()).hexdigest()
