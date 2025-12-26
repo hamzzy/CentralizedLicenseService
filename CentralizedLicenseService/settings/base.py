@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     # Local apps
+    "CentralizedLicenseService.apps.CentralizedLicenseServiceConfig",  # Must be first to setup observability
     "core",
     "brands",
     "products",

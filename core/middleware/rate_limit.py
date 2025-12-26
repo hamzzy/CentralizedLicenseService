@@ -94,14 +94,13 @@ class RateLimitMiddleware:
             return False, 0, reset_time
 
         # Increment counter
-        new_count = cache.incr(f"{cache_key}:{window_start}", 1)
-        if new_count is None:
-            # Key doesn't exist, set it
-            cache.set(
-                f"{cache_key}:{window_start}",
-                1,
-                timeout=self.RATE_LIMIT_WINDOW,
-            )
+        # Use get_or_set to ensure key exists before incrementing
+        full_key = f"{cache_key}:{window_start}"
+        try:
+            new_count = cache.incr(full_key, 1)
+        except ValueError:
+            # Key doesn't exist, create it with initial value of 1
+            cache.set(full_key, 1, timeout=self.RATE_LIMIT_WINDOW)
             new_count = 1
 
         remaining = max(0, limit - new_count)

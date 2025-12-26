@@ -31,15 +31,21 @@ class CentralizedLicenseServiceConfig(AppConfig):
 
         # Skip if running in a subprocess (Django's reloader runs code twice)
         # RUN_MAIN is set by Django's reloader in the main process
-        if os.environ.get("RUN_MAIN") != "true":
+        # In Docker/development, if RUN_MAIN is not set, we still want to setup
+        # The _initialized flag will prevent duplicate setup
+        if os.environ.get("RUN_MAIN") == "false":
             return
 
         # Only setup once (avoid duplicate registration)
         if not hasattr(self, "_initialized"):
             try:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info("Setting up observability...")
                 self.setup_observability()
                 self.register_event_handlers()
                 self._initialized = True
+                logger.info("Observability setup complete")
             except Exception as e:
                 import logging
 
