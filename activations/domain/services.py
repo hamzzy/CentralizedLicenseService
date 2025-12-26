@@ -6,7 +6,7 @@ fit within a single entity.
 """
 
 import uuid
-from typing import Optional
+from typing import Optional, Tuple
 
 from activations.domain.activation import Activation
 from activations.ports.activation_repository import ActivationRepository
@@ -58,7 +58,7 @@ class SeatManager:
         license: License,
         instance_identifier: str,
         repository: ActivationRepository,
-    ) -> tuple[bool, Optional[str]]:
+    ) -> Tuple[bool, Optional[str]]:
         """
         Check if a license can be activated for an instance.
 
