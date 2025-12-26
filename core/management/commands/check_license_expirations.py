@@ -55,22 +55,30 @@ class Command(BaseCommand):
             return
 
         # Mark licenses as expired
-        updated = 0
-        for license_model in expired_licenses:
-            try:
-                # Convert to domain entity
-                license_entity = repository._to_domain(license_model)
-                # Mark as expired
-                expired_entity = license_entity.mark_expired()
-                # Save
-                repository.save(expired_entity)
-                updated += 1
-                logger.info(f"Marked license {license_model.id} as expired")
-            except Exception as e:
-                logger.error(
-                    f"Error marking license {license_model.id} as expired: {e}",
-                    exc_info=True,
-                )
+        import asyncio
+
+        async def mark_expired():
+            updated = 0
+            for license_model in expired_licenses:
+                try:
+                    # Convert to domain entity
+                    license_entity = repository._to_domain(license_model)
+                    # Mark as expired
+                    expired_entity = license_entity.mark_expired()
+                    # Save (async)
+                    await repository.save(expired_entity)
+                    updated += 1
+                    logger.info(
+                        f"Marked license {license_model.id} as expired"
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Error marking license {license_model.id} as expired: {e}",
+                        exc_info=True,
+                    )
+            return updated
+
+        updated = asyncio.run(mark_expired())
 
         self.stdout.write(
             self.style.SUCCESS(f"Successfully marked {updated} license(s) as expired")

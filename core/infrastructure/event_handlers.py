@@ -16,7 +16,12 @@ from licenses.domain.events import (
     LicenseResumed,
     LicenseSuspended,
 )
-from activations.domain.events import LicenseActivated, SeatDeactivated
+
+try:
+    from activations.domain.events import LicenseActivated, SeatDeactivated
+except ImportError:
+    LicenseActivated = None
+    SeatDeactivated = None
 
 logger = logging.getLogger(__name__)
 
@@ -66,17 +71,18 @@ class LicenseCacheInvalidationHandler(EventHandler):
         )
 
         # Invalidate cache for license lifecycle events
-        if isinstance(
-            event,
-            (
-                LicenseRenewed,
-                LicenseSuspended,
-                LicenseResumed,
-                LicenseCancelled,
-                LicenseActivated,
-                SeatDeactivated,
-            ),
-        ):
+        event_types = [
+            LicenseRenewed,
+            LicenseSuspended,
+            LicenseResumed,
+            LicenseCancelled,
+        ]
+        if LicenseActivated:
+            event_types.append(LicenseActivated)
+        if SeatDeactivated:
+            event_types.append(SeatDeactivated)
+
+        if isinstance(event, tuple(event_types)):
             # Get license key from event
             # For now, log - full implementation would fetch license_key
             logger.debug(
@@ -118,16 +124,23 @@ def register_event_handlers():
     event_bus.subscribe(LicenseSuspended, audit_handler)
     event_bus.subscribe(LicenseResumed, audit_handler)
     event_bus.subscribe(LicenseCancelled, audit_handler)
-    event_bus.subscribe(LicenseActivated, audit_handler)
-    event_bus.subscribe(SeatDeactivated, audit_handler)
+
+    # Register activation event handlers if available
+    if LicenseActivated:
+        event_bus.subscribe(LicenseActivated, audit_handler)
+    if SeatDeactivated:
+        event_bus.subscribe(SeatDeactivated, audit_handler)
 
     # Register cache invalidation handlers
     event_bus.subscribe(LicenseRenewed, cache_handler)
     event_bus.subscribe(LicenseSuspended, cache_handler)
     event_bus.subscribe(LicenseResumed, cache_handler)
     event_bus.subscribe(LicenseCancelled, cache_handler)
-    event_bus.subscribe(LicenseActivated, cache_handler)
-    event_bus.subscribe(SeatDeactivated, cache_handler)
+
+    if LicenseActivated:
+        event_bus.subscribe(LicenseActivated, cache_handler)
+    if SeatDeactivated:
+        event_bus.subscribe(SeatDeactivated, cache_handler)
 
     logger.info("Event handlers registered")
 
