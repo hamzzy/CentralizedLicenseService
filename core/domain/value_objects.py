@@ -92,3 +92,34 @@ class LicenseStatus(Enum):
     def __str__(self) -> str:
         """Return status as string."""
         return self.value
+
+
+class InstanceType(Enum):
+    """Instance type value object."""
+
+    URL = "url"
+    HOSTNAME = "hostname"
+    MACHINE_ID = "machine_id"
+
+    def __str__(self) -> str:
+        """Return instance type as string."""
+        return self.value
+
+
+@dataclass(frozen=True)
+class InstanceIdentifier(ValueObject):
+    """Instance identifier value object."""
+
+    value: str
+    instance_type: InstanceType
+
+    def __post_init__(self):
+        """Validate instance identifier."""
+        if not self.value or len(self.value.strip()) == 0:
+            raise ValueError("Instance identifier cannot be empty")
+        if len(self.value) > 500:
+            raise ValueError("Instance identifier too long")
+
+    def __str__(self) -> str:
+        """Return identifier as string."""
+        return self.value
