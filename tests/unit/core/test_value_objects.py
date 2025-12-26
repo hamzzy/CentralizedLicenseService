@@ -3,7 +3,6 @@ Unit tests for core value objects.
 """
 import pytest
 
-from core.domain.exceptions import DomainException
 from core.domain.value_objects import (
     BrandSlug,
     Email,

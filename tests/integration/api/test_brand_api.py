@@ -23,10 +23,17 @@ class TestBrandAPI:
             slug="rankmath",
             prefix="RM",
         )
-        api_key = ApiKey.objects.create(brand=brand)
+        # Create API key and capture raw key
+        import secrets
+        import hashlib
 
-        # Get raw key (stored temporarily)
-        raw_key = api_key._raw_key
+        raw_key = secrets.token_urlsafe(32)
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        api_key = ApiKey.objects.create(
+            brand=brand,
+            key_prefix=raw_key[:8],
+            key_hash=key_hash,
+        )
 
         # Create product
         from products.infrastructure.models import Product
@@ -74,12 +81,20 @@ class TestBrandAPI:
     def test_renew_license_success(self, api_client, db_license):
         """Test successful license renewal via API."""
         # Get brand and create API key
+        import secrets
+        import hashlib
+
         from licenses.infrastructure.models import License
 
         license_obj = License.objects.get(id=db_license.id)
         brand = license_obj.license_key.brand
-        api_key = ApiKey.objects.create(brand=brand)
-        raw_key = api_key._raw_key
+        raw_key = secrets.token_urlsafe(32)
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        ApiKey.objects.create(
+            brand=brand,
+            key_prefix=raw_key[:8],
+            key_hash=key_hash,
+        )
 
         new_expiration = datetime.utcnow() + timedelta(days=730)
         url = reverse(
@@ -97,12 +112,20 @@ class TestBrandAPI:
 
     def test_suspend_license_success(self, api_client, db_license):
         """Test successful license suspension via API."""
+        import secrets
+        import hashlib
+
         from licenses.infrastructure.models import License
 
         license_obj = License.objects.get(id=db_license.id)
         brand = license_obj.license_key.brand
-        api_key = ApiKey.objects.create(brand=brand)
-        raw_key = api_key._raw_key
+        raw_key = secrets.token_urlsafe(32)
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        ApiKey.objects.create(
+            brand=brand,
+            key_prefix=raw_key[:8],
+            key_hash=key_hash,
+        )
 
         url = reverse(
             "api:v1:brand:suspend-license",
@@ -116,12 +139,20 @@ class TestBrandAPI:
 
     def test_list_licenses_by_email(self, api_client, db_license):
         """Test listing licenses by customer email."""
+        import secrets
+        import hashlib
+
         from licenses.infrastructure.models import License
 
         license_obj = License.objects.get(id=db_license.id)
         brand = license_obj.license_key.brand
-        api_key = ApiKey.objects.create(brand=brand)
-        raw_key = api_key._raw_key
+        raw_key = secrets.token_urlsafe(32)
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        ApiKey.objects.create(
+            brand=brand,
+            key_prefix=raw_key[:8],
+            key_hash=key_hash,
+        )
 
         url = reverse("api:v1:brand:list-licenses")
         response = api_client.get(
