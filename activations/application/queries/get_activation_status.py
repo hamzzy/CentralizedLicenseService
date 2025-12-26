@@ -12,4 +12,3 @@ class GetActivationStatusQuery:
 
     license_key: str
     instance_identifier: str
-

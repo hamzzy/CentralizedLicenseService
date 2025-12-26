@@ -3,6 +3,7 @@ ListLicensesByEmailHandler - US6.
 
 Handler for listing licenses by customer email.
 """
+from activations.ports.activation_repository import ActivationRepository
 from brands.ports.brand_repository import BrandRepository
 from brands.ports.product_repository import ProductRepository
 from licenses.application.dto.license_dto import LicenseListItemDTO
@@ -22,12 +23,14 @@ class ListLicensesByEmailHandler:
         license_repository: LicenseRepository,
         brand_repository: BrandRepository,
         product_repository: ProductRepository,
+        activation_repository: ActivationRepository,
     ):
         """Initialize handler with repositories."""
         self.license_key_repository = license_key_repository
         self.license_repository = license_repository
         self.brand_repository = brand_repository
         self.product_repository = product_repository
+        self.activation_repository = activation_repository
 
     async def handle(
         self, query: ListLicensesByEmailQuery
@@ -68,14 +71,11 @@ class ListLicensesByEmailHandler:
                 )
                 product_name = product.name if product else "Unknown"
 
-                # Count active seats (simplified - could be optimized)
-                from activations.infrastructure.repositories.django_activation_repository import (
-                    DjangoActivationRepository,
-                )
-
-                activation_repo = DjangoActivationRepository()
+                # Count active seats
                 active_activations = (
-                    await activation_repo.find_active_by_license(license.id)
+                    await self.activation_repository.find_active_by_license(
+                        license.id
+                    )
                 )
                 seats_used = len(active_activations)
 
