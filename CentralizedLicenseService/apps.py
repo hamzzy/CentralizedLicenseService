@@ -15,6 +15,7 @@ class CentralizedLicenseServiceConfig(AppConfig):
         """Called when Django starts."""
         # Only run in main process (not in management commands that don't need it)
         import sys
+        import os
 
         # Skip for management commands
         if len(sys.argv) > 1 and sys.argv[1] in [
@@ -24,14 +25,27 @@ class CentralizedLicenseServiceConfig(AppConfig):
             "shell",
             "test",
             "check",
+            "createsuperuser",
         ]:
             return
 
-        # Only setup once (avoid duplicate registration in multi-process environments)
+        # Skip if running in a subprocess (Django's reloader runs code twice)
+        # RUN_MAIN is set by Django's reloader in the main process
+        if os.environ.get("RUN_MAIN") != "true":
+            return
+
+        # Only setup once (avoid duplicate registration)
         if not hasattr(self, "_initialized"):
-            self.setup_observability()
-            self.register_event_handlers()
-            self._initialized = True
+            try:
+                self.setup_observability()
+                self.register_event_handlers()
+                self._initialized = True
+            except Exception as e:
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error in AppConfig.ready(): {e}", exc_info=True)
+                # Don't raise - allow app to start even if setup fails
 
     def setup_observability(self):
         """Setup observability after apps are ready."""
