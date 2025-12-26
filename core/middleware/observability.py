@@ -89,12 +89,30 @@ class ObservabilityMiddleware:
                 "path": request.path,
                 "status_code": response.status_code,
                 "duration_ms": round(duration * 1000, 2),
+                "response_size": len(response.content),
             }
             if trace_id:
                 log_extra["trace_id"] = trace_id
                 log_extra["span_id"] = span_id
 
-            logger.info("Request completed", extra=log_extra)
+            # Add brand context if available
+            brand = getattr(request, "brand", None)
+            if brand:
+                log_extra["brand_id"] = str(brand.id)
+                log_extra["brand_name"] = brand.name
+
+            # Add license key context if available
+            license_key = getattr(request, "license_key", None)
+            if license_key:
+                log_extra["license_key_id"] = str(license_key.id)
+
+            # Log based on status code
+            if response.status_code >= 500:
+                logger.error("Request completed with server error", extra=log_extra)
+            elif response.status_code >= 400:
+                logger.warning("Request completed with client error", extra=log_extra)
+            else:
+                logger.info("Request completed successfully", extra=log_extra)
 
             # Add observability headers
             response["X-Correlation-ID"] = correlation_id

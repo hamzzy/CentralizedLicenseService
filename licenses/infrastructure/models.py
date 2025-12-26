@@ -104,7 +104,11 @@ class License(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     license_key = models.ForeignKey(LicenseKey, on_delete=models.CASCADE, related_name="licenses")
     product = models.ForeignKey(
-        "products.Product", on_delete=models.CASCADE, related_name="licenses"
+        "products.Product",
+        on_delete=models.CASCADE,
+        related_name="licenses",
+        null=True,
+        blank=True,
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="valid")
     seat_limit = models.IntegerField(default=1, help_text="Maximum number of activations")
@@ -227,7 +231,11 @@ class AuditLog(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    brand = models.ForeignKey("brands.Brand", on_delete=models.CASCADE, related_name="audit_logs")
+    brand = models.ForeignKey(
+        "brands.Brand",
+        on_delete=models.CASCADE,
+        related_name="audit_logs",
+    )
     entity_type = models.CharField(max_length=50)
     entity_id = models.UUIDField()
     action = models.CharField(max_length=50, choices=ACTION_CHOICES)
@@ -255,7 +263,10 @@ class IdempotencyKey(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     key = models.CharField(max_length=255, unique=True, db_index=True)
-    brand = models.ForeignKey("brands.Brand", on_delete=models.CASCADE)
+    brand = models.ForeignKey(
+        "brands.Brand",
+        on_delete=models.CASCADE,
+    )
     response_data = models.JSONField(help_text="Cached response for idempotent replay")
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()

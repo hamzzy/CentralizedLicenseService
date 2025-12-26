@@ -10,10 +10,11 @@ These endpoints are used by end-user products to:
 import uuid
 
 from drf_spectacular.utils import OpenApiParameter, extend_schema
+from opentelemetry import trace
 from rest_framework import status
-from rest_framework.decorators import api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from activations.application.commands.activate_license import ActivateLicenseCommand
 from activations.application.commands.deactivate_seat import DeactivateSeatCommand
@@ -32,6 +33,7 @@ from api.v1.product.serializers import (
 from brands.infrastructure.repositories.django_product_repository import DjangoProductRepository
 from core.domain.exceptions import DomainException
 from core.domain.value_objects import InstanceType
+from core.instrumentation import get_tracer
 from licenses.application.handlers.get_license_status_handler import GetLicenseStatusHandler
 from licenses.application.queries.get_license_status import GetLicenseStatusQuery
 from licenses.infrastructure.repositories.django_license_key_repository import (
@@ -45,6 +47,11 @@ _license_repo = DjangoLicenseRepository()
 _product_repo = DjangoProductRepository()
 _activation_repo = DjangoActivationRepository()
 
+tracer = get_tracer(__name__)
+
+
+class ActivateLicenseView(APIView):
+    """View for activating licenses - US3."""
 
 @extend_schema(
     operation_id="activate_license",
@@ -63,26 +70,32 @@ _activation_repo = DjangoActivationRepository()
         422: {"description": "License invalid, expired, or seat limit exceeded"},
     },
 )
-@api_view(["POST"])
-async def activate_license(request: Request) -> Response:
-    """
-    Activate a license for an instance - US3.
+    async def post(self, request: Request) -> Response:
+        """Activate a license for an instance - US3."""
+        with tracer.start_as_current_span("activate_license") as span:
+            span.set_attribute("operation", "activate_license")
 
-    POST /api/v1/product/activate
-    """
     serializer = ActivateLicenseRequestSerializer(data=request.data)
     if not serializer.is_valid():
+                span.set_attribute("error", "validation_failed")
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "Validation failed"))
         return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     # Get license key from request (set by middleware)
     license_key_obj = getattr(request, "license_key", None)
     if not license_key_obj:
+                span.set_attribute("error", "license_key_not_found")
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "License key not found"))
         return Response(
             {"error": "License key not found"},
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
     license_key = license_key_obj.key
+            span.set_attribute("license_key", license_key)
+            span.set_attribute("product_slug", serializer.validated_data["product_slug"])
+            span.set_attribute("instance_identifier", serializer.validated_data["instance_identifier"])
+            span.set_attribute("instance_type", serializer.validated_data["instance_type"])
 
     try:
         handler = ActivateLicenseHandler(
@@ -100,6 +113,8 @@ async def activate_license(request: Request) -> Response:
         }
         instance_type = instance_type_map.get(serializer.validated_data["instance_type"])
         if not instance_type:
+                    span.set_attribute("error", "invalid_instance_type")
+                    span.set_status(trace.Status(trace.StatusCode.ERROR, "Invalid instance type"))
             return Response(
                 {"error": "Invalid instance_type"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -116,16 +131,30 @@ async def activate_license(request: Request) -> Response:
         result = await handler.handle(command)
 
         response_serializer = ActivateLicenseResponseSerializer(result)
+                span.set_attribute("activation.id", str(result.activation_id))
+                span.set_attribute("license.id", str(result.license_id))
+                span.set_status(trace.Status(trace.StatusCode.OK))
+                
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
     except DomainException as e:
+                span.set_attribute("error", "domain_exception")
+                span.set_attribute("error.message", str(e))
+                span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
+            except Exception:
+                span.set_attribute("error", "internal_error")
+                span.set_status(
+                    trace.Status(trace.StatusCode.ERROR, "Internal server error")
+                )
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
+class GetLicenseStatusView(APIView):
+    """View for checking license status - US4."""
 
 @extend_schema(
     operation_id="get_license_status",
@@ -158,20 +187,28 @@ async def activate_license(request: Request) -> Response:
         422: {"description": "License invalid, expired, or suspended"},
     },
 )
-@api_view(["GET"])
-async def get_license_status(request: Request) -> Response:
-    """
-    Get license status and entitlements - US4.
+    async def get(self, request: Request) -> Response:
+        """Get license status and entitlements - US4."""
+        with tracer.start_as_current_span("get_license_status") as span:
+            span.set_attribute("operation", "get_license_status")
 
-    GET /api/v1/product/status?license_key={key}
-    """
-    license_key = request.query_params.get("license_key") or request.headers.get("X-License-Key")
+            license_key = (
+                request.query_params.get("license_key")
+                or request.headers.get("X-License-Key")
+            )
 
     if not license_key:
+                span.set_attribute("error", "license_key_required")
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "License key required"))
         return Response(
             {"error": "license_key parameter or X-License-Key header required"},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+            span.set_attribute("license_key", license_key)
+            instance_identifier = request.query_params.get("instance_identifier")
+            if instance_identifier:
+                span.set_attribute("instance_identifier", instance_identifier)
 
     try:
         handler = GetLicenseStatusHandler(
@@ -186,16 +223,28 @@ async def get_license_status(request: Request) -> Response:
         result = await handler.handle(query)
 
         serializer = LicenseStatusResponseSerializer(result)
+                span.set_attribute("status", result.status)
+                span.set_attribute("is_valid", str(result.is_valid))
+                span.set_attribute("licenses.count", len(result.licenses))
+                span.set_status(trace.Status(trace.StatusCode.OK))
+                
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     except DomainException as e:
+                span.set_attribute("error", "domain_exception")
+                span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
+                span.set_attribute("error", "internal_error")
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
+class DeactivateSeatView(APIView):
+    """View for deactivating seats - US5."""
 
 @extend_schema(
     operation_id="deactivate_seat",
@@ -212,22 +261,24 @@ async def get_license_status(request: Request) -> Response:
         404: {"description": "License key or activation not found"},
     },
 )
-@api_view(["DELETE"])
-async def deactivate_seat(request: Request, activation_id: uuid.UUID) -> Response:
-    """
-    Deactivate a seat - US5.
+    async def delete(self, request: Request, activation_id: uuid.UUID) -> Response:
+        """Deactivate a seat - US5."""
+        with tracer.start_as_current_span("deactivate_seat") as span:
+            span.set_attribute("operation", "deactivate_seat")
+            span.set_attribute("activation.id", str(activation_id))
 
-    DELETE /api/v1/product/activations/{activation_id}
-    """
     # Get license key from request (set by middleware)
     license_key_obj = getattr(request, "license_key", None)
     if not license_key_obj:
+                span.set_attribute("error", "license_key_not_found")
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "License key not found"))
         return Response(
             {"error": "License key not found"},
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
     license_key = license_key_obj.key
+            span.set_attribute("license_key", license_key)
 
     # Get instance_identifier from request body or query param
     instance_identifier = request.data.get("instance_identifier") or request.query_params.get(
@@ -235,10 +286,14 @@ async def deactivate_seat(request: Request, activation_id: uuid.UUID) -> Respons
     )
 
     if not instance_identifier:
+                span.set_attribute("error", "instance_identifier_required")
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "Instance identifier required"))
         return Response(
             {"error": "instance_identifier is required"},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+            span.set_attribute("instance_identifier", instance_identifier)
 
     try:
         handler = DeactivateSeatHandler(
@@ -253,14 +308,19 @@ async def deactivate_seat(request: Request, activation_id: uuid.UUID) -> Respons
 
         await handler.handle(command)
 
+                span.set_status(trace.Status(trace.StatusCode.OK))
         return Response(
             {"message": "Seat deactivated successfully"},
             status=status.HTTP_200_OK,
         )
 
     except DomainException as e:
+                span.set_attribute("error", "domain_exception")
+                span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
+                span.set_attribute("error", "internal_error")
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,

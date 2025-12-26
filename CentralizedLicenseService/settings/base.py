@@ -152,6 +152,22 @@ SPECTACULAR_SETTINGS = {
         {"name": "Product API", "description": "Product-facing license activation"},
         {"name": "Health", "description": "Health check endpoints"},
     ],
+    "APPEND_COMPONENTS": {
+        "securitySchemes": {
+            "ApiKeyAuth": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "X-API-Key",
+                "description": "API key for brand authentication",
+            },
+            "LicenseKeyAuth": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "X-License-Key",
+                "description": "License key for product authentication",
+            },
+        }
+    },
 }
 
 # Redis Cache

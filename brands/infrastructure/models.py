@@ -38,9 +38,6 @@ class Brand(models.Model):
             models.Index(fields=["slug"]),
             models.Index(fields=["prefix"]),
         ]
-        # Note: CheckConstraint with length lookup is not supported by Django ORM
-        # Validation is handled in clean() method instead
-        constraints = []
 
     def clean(self):
         """Validate brand fields."""
@@ -158,55 +155,3 @@ class ApiKey(models.Model):
         """Update last_used_at timestamp."""
         self.last_used_at = timezone.now()
         self.save(update_fields=["last_used_at"])
-
-
-class WebhookConfig(models.Model):
-    """
-    Webhook configuration for brands.
-
-    Allows brands to receive webhooks for license events.
-    """
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name="webhook_configs")
-    url = models.URLField(max_length=500, help_text="Webhook URL")
-    secret = models.CharField(
-        max_length=255,
-        help_text="Secret for webhook signature verification",
-    )
-    events = models.JSONField(
-        default=list,
-        help_text="List of event types to subscribe to",
-    )
-    is_active = models.BooleanField(default=True)
-    max_retries = models.IntegerField(default=3, help_text="Maximum retry attempts")
-    timeout_seconds = models.IntegerField(default=10, help_text="Request timeout in seconds")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = "webhook_configs"
-        ordering = ["-created_at"]
-        indexes = [
-            models.Index(fields=["brand", "is_active"]),
-            models.Index(fields=["is_active"]),
-        ]
-
-    def __str__(self):
-        return f"{self.brand.name} - {self.url}"
-
-    def clean(self):
-        """Validate webhook configuration."""
-        from django.core.exceptions import ValidationError
-
-        if not self.url:
-            raise ValidationError("Webhook URL is required")
-        if not self.secret:
-            raise ValidationError("Webhook secret is required")
-        if not isinstance(self.events, list):
-            raise ValidationError("Events must be a list")
-
-    def save(self, *args, **kwargs):
-        """Save with validation."""
-        self.full_clean()
-        super().save(*args, **kwargs)

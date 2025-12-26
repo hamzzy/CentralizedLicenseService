@@ -1,0 +1,519 @@
+{
+	"info": {
+		"_postman_id": "license-service-collection",
+		"name": "Centralized License Service API",
+		"description": "Complete API collection for Centralized License Service with sample data",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "license-service"
+	},
+	"item": [
+		{
+			"name": "Brand API",
+			"item": [
+				{
+					"name": "Provision License",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('license_key_id', response.license_key.id);",
+									"    pm.environment.set('license_key_value', response.license_key.key);",
+									"    pm.environment.set('license_id', response.licenses[0].id);",
+									"    pm.environment.set('product_id', response.licenses[0].product_id);",
+									"    console.log('License Key:', response.license_key.key);",
+									"    console.log('License ID:', response.licenses[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-API-Key",
+								"value": "{{brand_api_key}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customer_email\": \"customer@example.com\",\n    \"products\": [\"{{product_id}}\"],\n    \"expiration_date\": \"2025-12-31T23:59:59Z\",\n    \"max_seats\": 5\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/brand/licenses/provision",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"brand",
+								"licenses",
+								"provision"
+							]
+						},
+						"description": "Create a new license key and associated licenses for a customer. Requires brand API key authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "List Licenses by Email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const licenses = pm.response.json();",
+									"    if (licenses.length > 0) {",
+									"        pm.environment.set('license_key_value', licenses[0].license_key);",
+									"        console.log('Found', licenses.length, 'licenses');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{brand_api_key}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/brand/licenses?email={{customer_email}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"brand",
+								"licenses"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "{{customer_email}}"
+								}
+							]
+						},
+						"description": "Query all licenses for a customer by email address."
+					},
+					"response": []
+				},
+				{
+					"name": "Renew License",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-API-Key",
+								"value": "{{brand_api_key}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"expiration_date\": \"2026-12-31T23:59:59Z\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/brand/licenses/{{license_id}}/renew",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"brand",
+								"licenses",
+								"{{license_id}}",
+								"renew"
+							]
+						},
+						"description": "Extend a license's expiration date."
+					},
+					"response": []
+				},
+				{
+					"name": "Suspend License",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-API-Key",
+								"value": "{{brand_api_key}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Customer requested suspension\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/brand/licenses/{{license_id}}/suspend",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"brand",
+								"licenses",
+								"{{license_id}}",
+								"suspend"
+							]
+						},
+						"description": "Temporarily disable a license. Suspended licenses cannot be activated."
+					},
+					"response": []
+				},
+				{
+					"name": "Resume License",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-API-Key",
+								"value": "{{brand_api_key}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/brand/licenses/{{license_id}}/resume",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"brand",
+								"licenses",
+								"{{license_id}}",
+								"resume"
+							]
+						},
+						"description": "Re-enable a suspended license."
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel License",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-API-Key",
+								"value": "{{brand_api_key}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Customer cancelled subscription\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/brand/licenses/{{license_id}}/cancel",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"brand",
+								"licenses",
+								"{{license_id}}",
+								"cancel"
+							]
+						},
+						"description": "Permanently cancel a license. Cancelled licenses cannot be reactivated."
+					},
+					"response": []
+				}
+			],
+			"description": "Brand-facing API endpoints for license management"
+		},
+		{
+			"name": "Product API",
+			"item": [
+				{
+					"name": "Activate License",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('activation_id', response.activation_id);",
+									"    console.log('Activation ID:', response.activation_id);",
+									"    console.log('Seats Remaining:', response.seats_remaining);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-License-Key",
+								"value": "{{license_key_value}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product_slug\": \"{{product_slug}}\",\n    \"instance_identifier\": \"https://example.com\",\n    \"instance_type\": \"url\",\n    \"instance_metadata\": {\n        \"version\": \"1.0.0\",\n        \"environment\": \"production\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/product/activate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"product",
+								"activate"
+							]
+						},
+						"description": "Activate a license on a specific instance (URL, hostname, or machine ID). This consumes a seat from the license's seat limit."
+					},
+					"response": []
+				},
+				{
+					"name": "Get License Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/product/status?license_key={{license_key_value}}&instance_identifier={{instance_identifier}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"product",
+								"status"
+							],
+							"query": [
+								{
+									"key": "license_key",
+									"value": "{{license_key_value}}"
+								},
+								{
+									"key": "instance_identifier",
+									"value": "{{instance_identifier}}",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Verify license validity and seat availability for a specific instance."
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate Seat",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-License-Key",
+								"value": "{{license_key_value}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"instance_identifier\": \"{{instance_identifier}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/product/activations/{{activation_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"product",
+								"activations",
+								"{{activation_id}}"
+							]
+						},
+						"description": "Release a seat for reuse. This deactivates the license on a specific instance."
+					},
+					"response": []
+				}
+			],
+			"description": "Product-facing API endpoints for license activation"
+		},
+		{
+			"name": "Health Checks",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health",
+								""
+							]
+						},
+						"description": "Basic health check endpoint"
+					},
+					"response": []
+				},
+				{
+					"name": "Database Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health/db/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health",
+								"db",
+								""
+							]
+						},
+						"description": "Database connectivity health check"
+					},
+					"response": []
+				},
+				{
+					"name": "Cache Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health/cache/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health",
+								"cache",
+								""
+							]
+						},
+						"description": "Cache connectivity health check"
+					},
+					"response": []
+				},
+				{
+					"name": "Readiness Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ready/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ready",
+								""
+							]
+						},
+						"description": "Application readiness check"
+					},
+					"response": []
+				}
+			],
+			"description": "Health check endpoints"
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "brand_api_key",
+			"value": "YOUR_BRAND_API_KEY_HERE",
+			"type": "string"
+		},
+		{
+			"key": "license_key_value",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "license_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "product_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "customer_email",
+			"value": "customer@example.com",
+			"type": "string"
+		},
+		{
+			"key": "product_slug",
+			"value": "example-product",
+			"type": "string"
+		},
+		{
+			"key": "activation_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "instance_identifier",
+			"value": "https://example.com",
+			"type": "string"
+		}
+	]
+}
+

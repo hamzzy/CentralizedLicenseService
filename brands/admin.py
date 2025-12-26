@@ -4,7 +4,7 @@ Django admin configuration for brands app.
 from django.contrib import admin
 from django.utils.html import format_html
 
-from brands.infrastructure.models import ApiKey, Brand, WebhookConfig
+from brands.infrastructure.models import ApiKey, Brand
 
 
 @admin.register(Brand)
@@ -58,6 +58,7 @@ class ApiKeyAdmin(admin.ModelAdmin):
         "created_at",
         "last_used_at",
         "raw_key_display",
+        "is_valid_display",
     ]
     fieldsets = (
         (
@@ -133,69 +134,4 @@ class ApiKeyAdmin(admin.ModelAdmin):
                 "(Save this - it won't be shown again)",
                 level="WARNING",
             )
-
-
-@admin.register(WebhookConfig)
-class WebhookConfigAdmin(admin.ModelAdmin):
-    """Admin interface for WebhookConfig model."""
-
-    list_display = [
-        "brand",
-        "url_display",
-        "is_active",
-        "event_count",
-        "max_retries",
-        "created_at",
-    ]
-    list_filter = ["is_active", "created_at", "brand"]
-    search_fields = ["url", "brand__name"]
-    readonly_fields = ["id", "created_at", "updated_at"]
-    fieldsets = (
-        (
-            "Basic Information",
-            {
-                "fields": ("id", "brand", "url", "is_active"),
-            },
-        ),
-        (
-            "Configuration",
-            {
-                "fields": ("secret", "events", "max_retries", "timeout_seconds"),
-            },
-        ),
-        (
-            "Timestamps",
-            {
-                "fields": ("created_at", "updated_at"),
-                "classes": ("collapse",),
-            },
-        ),
-    )
-
-    def url_display(self, obj):
-        """Display URL with truncation."""
-        if len(obj.url) > 50:
-            return format_html(
-                '<span title="{}">{}</span>',
-                obj.url,
-                obj.url[:47] + "...",
-            )
-        return obj.url
-
-    url_display.short_description = "Webhook URL"
-
-    def event_count(self, obj):
-        """Display number of subscribed events."""
-        count = len(obj.events) if obj.events else 0
-        return format_html(
-            '<span style="background: #e3f2fd; padding: 2px 8px; '
-            'border-radius: 10px;">{}</span>',
-            count,
-        )
-
-    event_count.short_description = "Events"
-
-    def get_queryset(self, request):
-        """Optimize queryset."""
-        return super().get_queryset(request).select_related("brand")
 

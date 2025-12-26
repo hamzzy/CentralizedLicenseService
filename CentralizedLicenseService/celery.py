@@ -1,7 +1,7 @@
 """
 Celery configuration for background tasks.
 
-Used for webhook delivery and event processing.
+Used for event processing.
 """
 
 import os

@@ -70,48 +70,6 @@ class Migration(migrations.Migration):
                 "ordering": ["name"],
             },
         ),
-        migrations.CreateModel(
-            name="WebhookConfig",
-            fields=[
-                (
-                    "id",
-                    models.UUIDField(
-                        default=uuid.uuid4, editable=False, primary_key=True, serialize=False
-                    ),
-                ),
-                ("url", models.URLField(help_text="Webhook URL", max_length=500)),
-                (
-                    "secret",
-                    models.CharField(
-                        help_text="Secret for webhook signature verification", max_length=255
-                    ),
-                ),
-                (
-                    "events",
-                    models.JSONField(default=list, help_text="List of event types to subscribe to"),
-                ),
-                ("is_active", models.BooleanField(default=True)),
-                ("max_retries", models.IntegerField(default=3, help_text="Maximum retry attempts")),
-                (
-                    "timeout_seconds",
-                    models.IntegerField(default=10, help_text="Request timeout in seconds"),
-                ),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("updated_at", models.DateTimeField(auto_now=True)),
-                (
-                    "brand",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name="webhook_configs",
-                        to="brands.brand",
-                    ),
-                ),
-            ],
-            options={
-                "db_table": "webhook_configs",
-                "ordering": ["-created_at"],
-            },
-        ),
         migrations.AddIndex(
             model_name="brand",
             index=models.Index(fields=["slug"], name="brands_slug_6a4b1c_idx"),
@@ -119,13 +77,6 @@ class Migration(migrations.Migration):
         migrations.AddIndex(
             model_name="brand",
             index=models.Index(fields=["prefix"], name="brands_prefix_92a708_idx"),
-        ),
-        migrations.AddConstraint(
-            model_name="brand",
-            constraint=models.CheckConstraint(
-                check=models.Q(("prefix__length__gte", 2), ("prefix__length__lte", 10)),
-                name="prefix_length_valid",
-            ),
         ),
         migrations.AddField(
             model_name="apikey",
@@ -135,16 +86,6 @@ class Migration(migrations.Migration):
                 related_name="api_keys",
                 to="brands.brand",
             ),
-        ),
-        migrations.AddIndex(
-            model_name="webhookconfig",
-            index=models.Index(
-                fields=["brand", "is_active"], name="webhook_con_brand_i_8e7df7_idx"
-            ),
-        ),
-        migrations.AddIndex(
-            model_name="webhookconfig",
-            index=models.Index(fields=["is_active"], name="webhook_con_is_acti_6cdecf_idx"),
         ),
         migrations.AddIndex(
             model_name="apikey",

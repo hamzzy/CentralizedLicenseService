@@ -69,10 +69,16 @@ def setup_opentelemetry():
     # Configure Prometheus metrics
     prometheus_port = int(os.environ.get("PROMETHEUS_PORT", "9090"))
     try:
-        start_http_server(prometheus_port)
-        logger.info(f"Prometheus metrics server started on port {prometheus_port}")
-    except OSError:
-        logger.warning(f"Prometheus metrics server port {prometheus_port} already in use")
+        # Start metrics server on all interfaces (0.0.0.0) so Prometheus can access it
+        from prometheus_client import start_http_server
+        start_http_server(prometheus_port, addr="0.0.0.0")
+        logger.info(
+            f"Prometheus metrics server started on 0.0.0.0:{prometheus_port}"
+        )
+    except OSError as e:
+        logger.warning(
+            f"Prometheus metrics server port {prometheus_port} already in use: {e}"
+        )
 
     logger.info("OpenTelemetry instrumentation configured")
 

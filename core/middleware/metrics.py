@@ -32,14 +32,19 @@ class MetricsMiddleware:
         """Process request and record metrics."""
         start_time = time.time()
 
+        # Extract endpoint (remove query params and normalize)
+        endpoint = request.path.split("?")[0]
+        # Normalize UUIDs in paths for better metric aggregation
+        import re
+        endpoint = re.sub(r"/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", "/{id}", endpoint)
+        endpoint = re.sub(r"/\d+", "/{id}", endpoint)
+
+        try:
         # Process request
         response = self.get_response(request)
 
         # Calculate duration
         duration = time.time() - start_time
-
-        # Extract endpoint (remove query params)
-        endpoint = request.path.split("?")[0]
 
         # Record metrics
         http_requests_total.labels(
@@ -54,3 +59,20 @@ class MetricsMiddleware:
         ).observe(duration)
 
         return response
+        except Exception as e:
+            # Calculate duration even on error
+            duration = time.time() - start_time
+            
+            # Record error metrics
+            http_requests_total.labels(
+                method=request.method,
+                endpoint=endpoint,
+                status_code=500,
+            ).inc()
+
+            http_request_duration_seconds.labels(
+                method=request.method,
+                endpoint=endpoint,
+            ).observe(duration)
+            
+            raise

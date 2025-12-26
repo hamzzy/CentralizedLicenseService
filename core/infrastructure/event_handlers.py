@@ -6,7 +6,6 @@ like audit logging, notifications, cache invalidation, etc.
 """
 
 import logging
-from typing import Dict
 
 from core.domain.events import DomainEvent, EventHandler
 from licenses.domain.events import (
@@ -24,10 +23,6 @@ except ImportError:
     LicenseActivated = None
     SeatDeactivated = None
 
-try:
-    from core.infrastructure.webhook_handler import WebhookEventHandler
-except ImportError:
-    WebhookEventHandler = None
 
 logger = logging.getLogger(__name__)
 
@@ -72,8 +67,6 @@ class LicenseCacheInvalidationHandler(EventHandler):
         Args:
             event: Domain event
         """
-        from licenses.application.services.license_cache_service import LicenseCacheService
-
         # Invalidate cache for license lifecycle events
         event_types = [
             LicenseRenewed,
@@ -143,19 +136,5 @@ def register_event_handlers():
         event_bus.subscribe(LicenseActivated, cache_handler)
     if SeatDeactivated:
         event_bus.subscribe(SeatDeactivated, cache_handler)
-
-    # Register webhook handler
-    webhook_handler = WebhookEventHandler()
-    event_bus.subscribe(LicenseKeyCreated, webhook_handler)
-    event_bus.subscribe(LicenseProvisioned, webhook_handler)
-    event_bus.subscribe(LicenseRenewed, webhook_handler)
-    event_bus.subscribe(LicenseSuspended, webhook_handler)
-    event_bus.subscribe(LicenseResumed, webhook_handler)
-    event_bus.subscribe(LicenseCancelled, webhook_handler)
-
-    if LicenseActivated:
-        event_bus.subscribe(LicenseActivated, webhook_handler)
-    if SeatDeactivated:
-        event_bus.subscribe(SeatDeactivated, webhook_handler)
 
     logger.info("Event handlers registered")

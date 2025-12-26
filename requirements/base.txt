@@ -11,7 +11,7 @@ django-ratelimit==4.1.0
 # RabbitMQ
 celery==5.3.4
 kombu==5.3.4
-# Webhooks
+# HTTP requests
 requests==2.31.0
 # OpenTelemetry
 opentelemetry-api==1.24.0

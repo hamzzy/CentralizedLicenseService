@@ -9,28 +9,32 @@ from api.v1.brand import views
 urlpatterns = [
     path(
         "licenses/provision",
-        views.provision_license,
+        views.ProvisionLicenseView.as_view(),
         name="provision-license",
     ),
     path(
         "licenses/<uuid:license_id>/renew",
-        views.renew_license,
+        views.RenewLicenseView.as_view(),
         name="renew-license",
     ),
     path(
         "licenses/<uuid:license_id>/suspend",
-        views.suspend_license,
+        views.SuspendLicenseView.as_view(),
         name="suspend-license",
     ),
     path(
         "licenses/<uuid:license_id>/resume",
-        views.resume_license,
+        views.ResumeLicenseView.as_view(),
         name="resume-license",
     ),
     path(
         "licenses/<uuid:license_id>/cancel",
-        views.cancel_license,
+        views.CancelLicenseView.as_view(),
         name="cancel-license",
     ),
-    path("licenses", views.list_licenses_by_email, name="list-licenses"),
+    path(
+        "licenses",
+        views.ListLicensesByEmailView.as_view(),
+        name="list-licenses",
+    ),
 ]
