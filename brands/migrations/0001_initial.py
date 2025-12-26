@@ -120,7 +120,8 @@ class Migration(migrations.Migration):
             model_name="brand",
             index=models.Index(fields=["prefix"], name="brands_prefix_92a708_idx"),
         ),
-        # Use raw SQL for prefix length constraint (CheckConstraint doesn't support length lookup)
+        # Note: CheckConstraint with length lookup removed - validation in clean() method
+        # Using RunSQL for PostgreSQL-specific constraint if needed
         migrations.RunSQL(
             sql="ALTER TABLE brands ADD CONSTRAINT prefix_length_valid CHECK (LENGTH(prefix) >= 2 AND LENGTH(prefix) <= 10);",
             reverse_sql="ALTER TABLE brands DROP CONSTRAINT IF EXISTS prefix_length_valid;",
