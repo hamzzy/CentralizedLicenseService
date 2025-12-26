@@ -195,6 +195,25 @@ CACHES = {
 TENANT_HEADER = "X-API-Key"
 BRAND_CONTEXT_KEY = "brand_id"
 
+# RabbitMQ / Celery Configuration
+# In Docker, use service name 'rabbitmq', locally use 'localhost'
+default_rabbitmq_url = (
+    "amqp://guest:guest@rabbitmq:5672//"
+    if os.environ.get("DOCKER_ENV")
+    else "amqp://guest:guest@localhost:5672//"
+)
+CELERY_BROKER_URL = os.environ.get("RABBITMQ_URL", default_rabbitmq_url)
+CELERY_RESULT_BACKEND = os.environ.get("REDIS_URL", default_redis_url)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "UTC"
+
+# Rate Limiting Configuration
+RATE_LIMIT_ENABLED = os.environ.get("RATE_LIMIT_ENABLED", "true").lower() == "true"
+DEFAULT_RATE_LIMIT = int(os.environ.get("DEFAULT_RATE_LIMIT", "100"))  # per minute
+RATE_LIMIT_WINDOW = int(os.environ.get("RATE_LIMIT_WINDOW", "60"))  # seconds
+
 # Observability
 LOGGING = {
     "version": 1,
