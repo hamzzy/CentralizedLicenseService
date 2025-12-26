@@ -7,7 +7,6 @@ This module configures JSON logging that works well with Loki.
 import json
 import logging
 import sys
-
 from pythonjsonlogger import jsonlogger
 
 

@@ -23,7 +23,6 @@ from activations.application.commands.activate_license import ActivateLicenseCom
 from activations.application.commands.deactivate_seat import DeactivateSeatCommand
 from activations.application.handlers.activate_license_handler import ActivateLicenseHandler
 from activations.application.handlers.deactivate_seat_handler import DeactivateSeatHandler
-from activations.domain.services import SeatManager
 from activations.infrastructure.repositories.django_activation_repository import (
     DjangoActivationRepository,
 )
@@ -35,13 +34,11 @@ from api.v1.product.serializers import (
     LicenseStatusResponseSerializer,
 )
 from brands.infrastructure.repositories.django_product_repository import DjangoProductRepository
-from core.domain.exceptions import DomainException, InvalidLicenseKeyError, LicenseNotFoundError
+from core.domain.exceptions import DomainException
 from core.domain.value_objects import InstanceType
 from core.instrumentation import Status, StatusCode, get_tracer
 from licenses.application.handlers.get_license_status_handler import GetLicenseStatusHandler
 from licenses.application.queries.get_license_status import GetLicenseStatusQuery
-from licenses.application.services.license_cache_service import LicenseCacheService
-from licenses.infrastructure.models import LicenseKey
 from licenses.infrastructure.repositories.django_license_key_repository import (
     DjangoLicenseKeyRepository,
 )
@@ -171,27 +168,21 @@ class ActivateLicenseView(APIView):
                 span.set_attribute("error.message", str(e))
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 return Response(
-                    {
-                        "error": "Activation with this License and Instance identifier already exists."
-                    },
+                    {"error": "Activation with this License and Instance identifier already exists."},
                     status=status.HTTP_409_CONFLICT,
                 )
             except ValueError as e:
                 span.set_attribute("error", "validation_error")
                 span.set_attribute("error.message", str(e))
                 span.set_status(Status(StatusCode.ERROR, str(e)))
-
+                
                 # Determine appropriate status code based on error message
                 status_code = status.HTTP_400_BAD_REQUEST
                 if "already activated" in str(e).lower() or "seat limit exceeded" in str(e).lower():
                     status_code = status.HTTP_409_CONFLICT
-                elif (
-                    "expired" in str(e).lower()
-                    or "suspended" in str(e).lower()
-                    or "cancelled" in str(e).lower()
-                ):
+                elif "expired" in str(e).lower() or "suspended" in str(e).lower() or "cancelled" in str(e).lower():
                     status_code = status.HTTP_403_FORBIDDEN
-
+                    
                 return Response({"error": str(e)}, status=status_code)
             except Exception as e:
                 span.set_attribute("error", "internal_error")
@@ -206,6 +197,7 @@ class ActivateLicenseView(APIView):
                     span.set_attribute("error.stack_trace", tb_str)
                 except Exception:
                     pass
+
                 span.set_status(Status(StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
@@ -404,13 +396,11 @@ class DeactivateSeatView(APIView):
                         status=status.HTTP_403_FORBIDDEN,
                     )
 
-                # Deactivate seat
-                await SeatManager.deactivate_seat(activation, _activation_repo)
+                # Deactivate using SeatManager
+                from activations.domain.services import SeatManager
 
-                # Invalidate license status cache
-                await LicenseCacheService.invalidate_license_status(license_key)
+                deactivated = await SeatManager.deactivate_seat(activation, _activation_repo)
 
-                span.set_attribute("activation.id", str(activation.id))
                 span.set_status(Status(StatusCode.OK))
                 return Response(
                     {"message": "Seat deactivated successfully", "status": "deactivated"},

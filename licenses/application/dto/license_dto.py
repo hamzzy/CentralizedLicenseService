@@ -48,7 +48,8 @@ class LicenseStatusDTO:
 
     license_key: str
     status: str  # Overall status (valid if any license is valid)
-    is_valid: bool
+    is_valid: bool  # License is valid (not expired, not suspended)
+    is_activated: bool  # License has active activations (in use)
     licenses: List[LicenseDTO]
     total_seats_used: int
     total_seats_available: int

@@ -45,7 +45,8 @@ class LicenseStatusResponseSerializer(serializers.Serializer):
 
     license_key = serializers.CharField()
     status = serializers.CharField()
-    is_valid = serializers.BooleanField()
+    is_valid = serializers.BooleanField()  # License is valid (not expired, not suspended)
+    is_activated = serializers.BooleanField()  # License has active activations (in use)
     licenses = LicenseDTOSerializer(many=True)
     total_seats_used = serializers.IntegerField()
     total_seats_available = serializers.IntegerField()

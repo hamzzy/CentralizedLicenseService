@@ -106,6 +106,7 @@ class GetLicenseStatusHandler:
             license_key=query.license_key,
             status="valid" if overall_valid else "invalid",
             is_valid=overall_valid,
+            is_activated=total_seats_used > 0,  # License is active if any seats are used
             licenses=license_dtos,
             total_seats_used=total_seats_used,
             total_seats_available=total_seats_available,
