@@ -16,8 +16,8 @@ urlpatterns = [
     path("health/cache/", HealthCacheView.as_view(), name="health-cache"),
     path("ready/", ReadyView.as_view(), name="ready"),
     # API endpoints
-    path("api/v1/brand/", include("api.v1.brand.urls")),
-    path("api/v1/product/", include("api.v1.product.urls")),
+    path("api/v1/brand/", include(("api.v1.brand.urls", "brand"), namespace="brand")),
+    path("api/v1/product/", include(("api.v1.product.urls", "product"), namespace="product")),
     # OpenAPI Schema
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     # Swagger UI

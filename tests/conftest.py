@@ -58,10 +58,13 @@ def activation_repository():
 @pytest.fixture
 def sample_brand():
     """Fixture for a sample Brand entity."""
+    import uuid
+    # Use unique values to avoid conflicts
+    unique_id = str(uuid.uuid4())[:8]
     return Brand.create(
-        name="RankMath",
-        slug="rankmath",
-        prefix="RM",
+        name=f"TestBrand{unique_id}",
+        slug=f"testbrand{unique_id}",
+        prefix=f"TB{unique_id[:2]}",
     )
 
 
@@ -108,12 +111,20 @@ def sample_activation(sample_license):
 
 
 @pytest.fixture
-def db_brand(db, sample_brand, brand_repository):
+def db_brand(db, brand_repository):
     """Fixture for a Brand saved in database."""
     import asyncio
+    import uuid
 
     async def save_brand():
-        return await brand_repository.save(sample_brand)
+        # Create unique brand for each test to avoid conflicts
+        unique_id = str(uuid.uuid4())[:8]
+        brand = Brand.create(
+            name=f"TestBrand{unique_id}",
+            slug=f"testbrand{unique_id}",
+            prefix=f"TB{unique_id[:2]}",
+        )
+        return await brand_repository.save(brand)
 
     return asyncio.run(save_brand())
 

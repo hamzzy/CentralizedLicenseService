@@ -63,7 +63,10 @@ jobs:
         run: isort --check-only .
       
       - name: Run Pylint
-        run: pylint --rcfile=pyproject.toml .
+        run: |
+          pylint --rcfile=pyproject.toml \
+            api/ brands/ products/ licenses/ activations/ core/ \
+            CentralizedLicenseService/
         continue-on-error: true
       
       - name: Run MyPy
@@ -76,8 +79,14 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/license_service_test
           REDIS_URL: redis://localhost:6379/0
           DJANGO_SECRET_KEY: test-secret-key-for-ci
+          DOCKER_ENV: "true"
         run: |
-          python manage.py migrate
+          # Wait for PostgreSQL to be ready
+          until pg_isready -h localhost -p 5432 -U postgres; do
+            echo "Waiting for PostgreSQL..."
+            sleep 1
+          done
+          # Run tests (pytest-django automatically creates test database and runs migrations)
           pytest --cov=. --cov-report=xml --cov-report=term
       
       - name: Upload coverage

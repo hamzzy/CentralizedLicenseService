@@ -46,10 +46,12 @@ class TestBrandRepository:
     @pytest.mark.asyncio
     async def test_exists(self, brand_repository):
         """Test checking brand existence."""
+        import uuid
+        unique_id = str(uuid.uuid4())[:8]
         brand = Brand.create(
-            name="Test Brand",
-            slug="test-brand-2",
-            prefix="TB2",
+            name=f"Test Brand {unique_id}",
+            slug=f"test-brand-{unique_id}",
+            prefix=f"TB{unique_id[:2]}",
         )
         saved = await brand_repository.save(brand)
 

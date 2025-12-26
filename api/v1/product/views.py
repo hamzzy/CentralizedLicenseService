@@ -11,7 +11,6 @@ import uuid
 
 from asgiref.sync import async_to_sync
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from opentelemetry import trace
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -34,7 +33,7 @@ from api.v1.product.serializers import (
 from brands.infrastructure.repositories.django_product_repository import DjangoProductRepository
 from core.domain.exceptions import DomainException
 from core.domain.value_objects import InstanceType
-from core.instrumentation import get_tracer
+from core.instrumentation import Status, StatusCode, get_tracer
 from licenses.application.handlers.get_license_status_handler import GetLicenseStatusHandler
 from licenses.application.queries.get_license_status import GetLicenseStatusQuery
 from licenses.infrastructure.repositories.django_license_key_repository import (
@@ -83,14 +82,14 @@ class ActivateLicenseView(APIView):
             serializer = ActivateLicenseRequestSerializer(data=request.data)
             if not serializer.is_valid():
                 span.set_attribute("error", "validation_failed")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Validation failed"))
+                span.set_status(Status(StatusCode.ERROR, "Validation failed"))
                 return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
             # Get license key from request (set by middleware)
             license_key_obj = getattr(request, "license_key", None)
             if not license_key_obj:
                 span.set_attribute("error", "license_key_not_found")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "License key not found"))
+                span.set_status(Status(StatusCode.ERROR, "License key not found"))
                 return Response(
                     {"error": "License key not found"},
                     status=status.HTTP_401_UNAUTHORIZED,
@@ -121,7 +120,7 @@ class ActivateLicenseView(APIView):
                 instance_type = instance_type_map.get(serializer.validated_data["instance_type"])
                 if not instance_type:
                     span.set_attribute("error", "invalid_instance_type")
-                    span.set_status(trace.Status(trace.StatusCode.ERROR, "Invalid instance type"))
+                    span.set_status(Status(StatusCode.ERROR, "Invalid instance type"))
                     return Response(
                         {"error": "Invalid instance_type"},
                         status=status.HTTP_400_BAD_REQUEST,
@@ -140,18 +139,39 @@ class ActivateLicenseView(APIView):
                 response_serializer = ActivateLicenseResponseSerializer(result)
                 span.set_attribute("activation.id", str(result.activation_id))
                 span.set_attribute("license.id", str(result.license_id))
-                span.set_status(trace.Status(trace.StatusCode.OK))
+                span.set_status(Status(StatusCode.OK))
 
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
             except DomainException as e:
                 span.set_attribute("error", "domain_exception")
+                span.set_attribute("error.type", type(e).__name__)
                 span.set_attribute("error.message", str(e))
-                span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
+                if hasattr(e, 'code'):
+                    span.set_attribute("error.code", str(e.code))
+                import traceback
+                try:
+                    tb_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+                    if len(tb_str) > 5000:
+                        tb_str = tb_str[:5000] + "... (truncated)"
+                    span.set_attribute("error.stack_trace", tb_str)
+                except Exception:
+                    pass
+                span.set_status(Status(StatusCode.ERROR, str(e)))
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception:
+            except Exception as e:
                 span.set_attribute("error", "internal_error")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
+                span.set_attribute("error.type", type(e).__name__)
+                span.set_attribute("error.message", str(e))
+                import traceback
+                try:
+                    tb_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+                    if len(tb_str) > 10000:
+                        tb_str = tb_str[:10000] + "... (truncated)"
+                    span.set_attribute("error.stack_trace", tb_str)
+                except Exception:
+                    pass
+                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -207,7 +227,7 @@ class GetLicenseStatusView(APIView):
 
             if not license_key:
                 span.set_attribute("error", "license_key_required")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "License key required"))
+                span.set_status(Status(StatusCode.ERROR, "License key required"))
                 return Response(
                     {"error": "license_key parameter or X-License-Key header required"},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -234,17 +254,17 @@ class GetLicenseStatusView(APIView):
                 span.set_attribute("status", result.status)
                 span.set_attribute("is_valid", str(result.is_valid))
                 span.set_attribute("licenses.count", len(result.licenses))
-                span.set_status(trace.Status(trace.StatusCode.OK))
+                span.set_status(Status(StatusCode.OK))
 
                 return Response(serializer.data, status=status.HTTP_200_OK)
 
             except DomainException as e:
                 span.set_attribute("error", "domain_exception")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
+                span.set_status(Status(StatusCode.ERROR, str(e)))
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
+                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -283,7 +303,7 @@ class DeactivateSeatView(APIView):
             license_key_obj = getattr(request, "license_key", None)
             if not license_key_obj:
                 span.set_attribute("error", "license_key_not_found")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "License key not found"))
+                span.set_status(Status(StatusCode.ERROR, "License key not found"))
                 return Response(
                     {"error": "License key not found"},
                     status=status.HTTP_401_UNAUTHORIZED,
@@ -292,49 +312,70 @@ class DeactivateSeatView(APIView):
             license_key = license_key_obj.key
             span.set_attribute("license_key", license_key)
 
-            # Get instance_identifier from request body or query param
-            instance_identifier = request.data.get(
-                "instance_identifier"
-            ) or request.query_params.get("instance_identifier")
-
-            if not instance_identifier:
-                span.set_attribute("error", "instance_identifier_required")
-                span.set_status(
-                    trace.Status(trace.StatusCode.ERROR, "Instance identifier required")
-                )
-                return Response(
-                    {"error": "instance_identifier is required"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            span.set_attribute("instance_identifier", instance_identifier)
-
             try:
-                handler = DeactivateSeatHandler(
-                    license_key_repository=_license_key_repo,
-                    activation_repository=_activation_repo,
+                # Find activation directly by ID
+                activation = await _activation_repo.find_by_id(activation_id)
+                if not activation:
+                    span.set_attribute("error", "activation_not_found")
+                    span.set_status(Status(StatusCode.ERROR, "Activation not found"))
+                    return Response(
+                        {"error": "Activation not found"},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+
+                # Verify the activation belongs to a license with the provided license key
+                from licenses.infrastructure.repositories.django_license_repository import (
+                    DjangoLicenseRepository,
                 )
 
-                command = DeactivateSeatCommand(
-                    license_key=license_key,
-                    instance_identifier=instance_identifier,
-                )
+                license_repo = DjangoLicenseRepository()
+                license_obj = await license_repo.find(activation.license_id)
+                if not license_obj:
+                    span.set_attribute("error", "license_not_found")
+                    span.set_status(Status(StatusCode.ERROR, "License not found"))
+                    return Response(
+                        {"error": "License not found"},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
 
-                await handler.handle(command)
+                # Verify license key matches by checking if the license's license_key_id matches
+                # the provided license key
+                key_hash = hashlib.sha256(license_key.encode()).hexdigest()
+                if license_key_obj.key_hash != key_hash:
+                    span.set_attribute("error", "license_key_mismatch")
+                    span.set_status(Status(StatusCode.ERROR, "License key mismatch"))
+                    return Response(
+                        {"error": "License key does not match activation"},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
 
-                span.set_status(trace.Status(trace.StatusCode.OK))
+                # Verify the license belongs to this license key
+                if license_obj.license_key_id != license_key_obj.id:
+                    span.set_attribute("error", "license_key_mismatch")
+                    span.set_status(Status(StatusCode.ERROR, "License key mismatch"))
+                    return Response(
+                        {"error": "License key does not match activation"},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+
+                # Deactivate using SeatManager
+                from activations.domain.services import SeatManager
+
+                deactivated = await SeatManager.deactivate_seat(activation, _activation_repo)
+
+                span.set_status(Status(StatusCode.OK))
                 return Response(
-                    {"message": "Seat deactivated successfully"},
+                    {"message": "Seat deactivated successfully", "status": "deactivated"},
                     status=status.HTTP_200_OK,
                 )
 
             except DomainException as e:
                 span.set_attribute("error", "domain_exception")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
+                span.set_status(Status(StatusCode.ERROR, str(e)))
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
+                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,

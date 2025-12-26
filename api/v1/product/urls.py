@@ -6,6 +6,8 @@ from django.urls import path
 
 from api.v1.product import views
 
+app_name = "product"
+
 urlpatterns = [
     path(
         "activate",

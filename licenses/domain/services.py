@@ -48,6 +48,9 @@ class LicenseValidator:
             Tuple of (is_valid, error_message)
         """
         if not license.is_valid():
+            # Check if expired by date (even if status is still VALID)
+            if license.expires_at and license.expires_at < datetime.utcnow():
+                return False, "License has expired"
             if license.status.value == "expired":
                 return False, "License has expired"
             if license.status.value == "suspended":

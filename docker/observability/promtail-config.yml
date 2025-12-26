@@ -9,15 +9,48 @@ clients:
   - url: http://loki:3100/loki/api/v1/push
 
 scrape_configs:
-  # Collect logs from stdout/stderr of containers
-  # Note: In Docker Compose, we collect logs via docker-compose logs
-  # For production, use file-based log collection or Docker log driver
-  - job_name: license-service
+  # Collect logs from Docker containers via Docker socket
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      # Only collect logs from our app container
+      - source_labels: [__meta_docker_container_name]
+        regex: '/(.*)'
+        target_label: container_name
+      - source_labels: [__meta_docker_container_label_com_docker_compose_service]
+        target_label: service
+      # Add labels for filtering
+      - source_labels: [container_name]
+        regex: '.*app.*'
+        action: keep
+    pipeline_stages:
+      - docker: {}
+      - json:
+          expressions:
+            log: log
+            stream: stream
+            attrs: attrs
+            tag: tag
+      - labels:
+          stream:
+          service:
+          container_name:
+      - output:
+          source: log
+      - timestamp:
+          source: time
+          format: RFC3339Nano
+
+  # Fallback: Collect logs from mounted log files
+  - job_name: license-service-files
     static_configs:
       - targets:
           - localhost
         labels:
           job: license-service
+          service: app
           __path__: /var/log/license-service/*.log
     pipeline_stages:
       - json:
@@ -25,8 +58,15 @@ scrape_configs:
             output: output
             stream: stream
             attrs: attrs
+            level: level
+            message: message
+            correlation_id: correlation_id
+            trace_id: trace_id
+            span_id: span_id
       - labels:
           stream:
+          level:
+          service:
       - output:
           source: output
 

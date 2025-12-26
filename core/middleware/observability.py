@@ -15,8 +15,14 @@ from django.http import HttpRequest, HttpResponse
 logger = logging.getLogger(__name__)
 
 try:
-    from opentelemetry import trace
-    from opentelemetry.trace import format_trace_id
+    try:
+        from opentelemetry import trace
+        from opentelemetry.trace import format_trace_id
+        OPENTELEMETRY_AVAILABLE = True
+    except ImportError:
+        OPENTELEMETRY_AVAILABLE = False
+        trace = None
+        format_trace_id = None
 
     OTEL_AVAILABLE = True
 except ImportError:
@@ -55,12 +61,16 @@ class ObservabilityMiddleware:
         # Get trace context if available
         trace_id = None
         span_id = None
-        if OTEL_AVAILABLE:
-            span = trace.get_current_span()
-            if span and span.get_span_context().is_valid:
-                trace_context = span.get_span_context()
-                trace_id = format_trace_id(trace_context.trace_id)
-                span_id = format_trace_id(trace_context.span_id)
+        if OTEL_AVAILABLE and OPENTELEMETRY_AVAILABLE and trace and format_trace_id:
+            try:
+                span = trace.get_current_span()
+                if span and span.get_span_context().is_valid:
+                    trace_context = span.get_span_context()
+                    trace_id = format_trace_id(trace_context.trace_id)
+                    span_id = format_trace_id(trace_context.span_id)
+            except Exception:
+                # OpenTelemetry not fully initialized, skip trace context
+                pass
 
         # Log request (structured for Loki)
         start_time = time.time()

@@ -21,7 +21,7 @@ class TestProductAPI:
         license_obj = License.objects.get(id=db_license.id)
         license_key_obj = LicenseKey.objects.get(id=license_obj.license_key_id)
 
-        url = reverse("api:v1:product:activate-license")
+        url = reverse("product:activate-license")
         response = api_client.post(
             url,
             {
@@ -38,7 +38,7 @@ class TestProductAPI:
 
     def test_activate_license_invalid_key(self, api_client):
         """Test activation with invalid license key."""
-        url = reverse("api:v1:product:activate-license")
+        url = reverse("product:activate-license")
         response = api_client.post(
             url,
             {
@@ -55,7 +55,7 @@ class TestProductAPI:
         license_obj = License.objects.get(id=db_license.id)
         license_key_obj = LicenseKey.objects.get(id=license_obj.license_key_id)
 
-        url = reverse("api:v1:product:check-license")
+        url = reverse("product:get-license-status")
         response = api_client.get(
             url,
             {
@@ -75,22 +75,20 @@ class TestProductAPI:
         from core.domain.value_objects import InstanceType
 
         # Create activation first
+        license_obj = License.objects.get(id=db_license.id)
         activation = Activation.objects.create(
-            license_id=db_license.id,
+            license=license_obj,
             instance_identifier="https://example.com",
-            instance_type=InstanceType.URL.value,
+            instance_metadata={"instance_type": InstanceType.URL.value},
         )
 
         license_obj = License.objects.get(id=db_license.id)
         license_key_obj = LicenseKey.objects.get(id=license_obj.license_key_id)
 
-        url = reverse("api:v1:product:deactivate-seat")
-        response = api_client.post(
+        url = reverse("product:deactivate-seat", kwargs={"activation_id": activation.id})
+        response = api_client.delete(
             url,
-            {
-                "license_key": license_key_obj.key,
-                "instance_identifier": "https://example.com",
-            },
+            HTTP_X_LICENSE_KEY=license_key_obj.key,
         )
 
         assert response.status_code == 200
@@ -102,13 +100,13 @@ class TestProductAPI:
         license_obj = License.objects.get(id=db_license.id)
         license_key_obj = LicenseKey.objects.get(id=license_obj.license_key_id)
 
-        url = reverse("api:v1:product:deactivate-seat")
-        response = api_client.post(
+        # Use a non-existent activation ID
+        import uuid
+        fake_activation_id = uuid.uuid4()
+        url = reverse("product:deactivate-seat", kwargs={"activation_id": fake_activation_id})
+        response = api_client.delete(
             url,
-            {
-                "license_key": license_key_obj.key,
-                "instance_identifier": "https://nonexistent.com",
-            },
+            HTTP_X_LICENSE_KEY=license_key_obj.key,
         )
 
         assert response.status_code == 404

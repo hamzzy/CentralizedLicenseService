@@ -11,7 +11,6 @@ import uuid
 
 from asgiref.sync import async_to_sync
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from opentelemetry import trace
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -32,7 +31,7 @@ from api.v1.brand.serializers import (
 from brands.infrastructure.repositories.django_brand_repository import DjangoBrandRepository
 from brands.infrastructure.repositories.django_product_repository import DjangoProductRepository
 from core.domain.exceptions import DomainException
-from core.instrumentation import get_tracer
+from core.instrumentation import Status, StatusCode, get_tracer
 from licenses.application.commands.cancel_license import CancelLicenseCommand
 from licenses.application.commands.provision_license import ProvisionLicenseCommand
 from licenses.application.commands.renew_license import RenewLicenseCommand
@@ -94,14 +93,14 @@ class ProvisionLicenseView(APIView):
             if not serializer.is_valid():
                 span.set_attribute("error", "validation_failed")
                 span.set_attribute("error.details", str(serializer.errors))
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Validation failed"))
+                span.set_status(Status(StatusCode.ERROR, "Validation failed"))
                 return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
             # Get brand from request (set by middleware)
             brand = getattr(request, "brand", None)
             if not brand:
                 span.set_attribute("error", "brand_not_found")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Brand not found"))
+                span.set_status(Status(StatusCode.ERROR, "Brand not found"))
                 return Response({"error": "Brand not found"}, status=status.HTTP_401_UNAUTHORIZED)
 
             span.set_attribute("brand.id", str(brand.id))
@@ -132,18 +131,39 @@ class ProvisionLicenseView(APIView):
                 response_serializer = ProvisionLicenseResponseSerializer(result)
                 span.set_attribute("license_key.id", str(result.license_key.id))
                 span.set_attribute("licenses.count", len(result.licenses))
-                span.set_status(trace.Status(trace.StatusCode.OK))
+                span.set_status(Status(StatusCode.OK))
 
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
             except DomainException as e:
                 span.set_attribute("error", "domain_exception")
+                span.set_attribute("error.type", type(e).__name__)
                 span.set_attribute("error.message", str(e))
-                span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
+                if hasattr(e, 'code'):
+                    span.set_attribute("error.code", str(e.code))
+                import traceback
+                try:
+                    tb_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+                    if len(tb_str) > 5000:
+                        tb_str = tb_str[:5000] + "... (truncated)"
+                    span.set_attribute("error.stack_trace", tb_str)
+                except Exception:
+                    pass
+                span.set_status(Status(StatusCode.ERROR, str(e)))
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception:
+            except Exception as e:
                 span.set_attribute("error", "internal_error")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
+                span.set_attribute("error.type", type(e).__name__)
+                span.set_attribute("error.message", str(e))
+                import traceback
+                try:
+                    tb_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+                    if len(tb_str) > 10000:
+                        tb_str = tb_str[:10000] + "... (truncated)"
+                    span.set_attribute("error.stack_trace", tb_str)
+                except Exception:
+                    pass
+                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -179,7 +199,7 @@ class RenewLicenseView(APIView):
             serializer = RenewLicenseRequestSerializer(data=request.data)
             if not serializer.is_valid():
                 span.set_attribute("error", "validation_failed")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Validation failed"))
+                span.set_status(Status(StatusCode.ERROR, "Validation failed"))
                 return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
             brand = getattr(request, "brand", None)
@@ -203,7 +223,7 @@ class RenewLicenseView(APIView):
 
                 await handler.handle(command)
 
-                span.set_status(trace.Status(trace.StatusCode.OK))
+                span.set_status(Status(StatusCode.OK))
                 return Response(
                     {"message": "License renewed successfully"},
                     status=status.HTTP_200_OK,
@@ -211,11 +231,11 @@ class RenewLicenseView(APIView):
 
             except DomainException as e:
                 span.set_attribute("error", "domain_exception")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
+                span.set_status(Status(StatusCode.ERROR, str(e)))
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
+                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -251,7 +271,7 @@ class SuspendLicenseView(APIView):
             serializer = SuspendLicenseRequestSerializer(data=request.data)
             if not serializer.is_valid():
                 span.set_attribute("error", "validation_failed")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Validation failed"))
+                span.set_status(Status(StatusCode.ERROR, "Validation failed"))
                 return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
             brand = getattr(request, "brand", None)
@@ -274,7 +294,7 @@ class SuspendLicenseView(APIView):
 
                 await handler.handle(command)
 
-                span.set_status(trace.Status(trace.StatusCode.OK))
+                span.set_status(Status(StatusCode.OK))
                 return Response(
                     {"message": "License suspended successfully"},
                     status=status.HTTP_200_OK,
@@ -282,11 +302,11 @@ class SuspendLicenseView(APIView):
 
             except DomainException as e:
                 span.set_attribute("error", "domain_exception")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
+                span.set_status(Status(StatusCode.ERROR, str(e)))
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
+                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -322,7 +342,7 @@ class ResumeLicenseView(APIView):
             serializer = ResumeLicenseRequestSerializer(data=request.data)
             if not serializer.is_valid():
                 span.set_attribute("error", "validation_failed")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Validation failed"))
+                span.set_status(Status(StatusCode.ERROR, "Validation failed"))
                 return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
             brand = getattr(request, "brand", None)
@@ -339,7 +359,7 @@ class ResumeLicenseView(APIView):
 
                 await handler.handle(command)
 
-                span.set_status(trace.Status(trace.StatusCode.OK))
+                span.set_status(Status(StatusCode.OK))
                 return Response(
                     {"message": "License resumed successfully"},
                     status=status.HTTP_200_OK,
@@ -347,11 +367,11 @@ class ResumeLicenseView(APIView):
 
             except DomainException as e:
                 span.set_attribute("error", "domain_exception")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
+                span.set_status(Status(StatusCode.ERROR, str(e)))
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
+                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -387,7 +407,7 @@ class CancelLicenseView(APIView):
             serializer = CancelLicenseRequestSerializer(data=request.data)
             if not serializer.is_valid():
                 span.set_attribute("error", "validation_failed")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Validation failed"))
+                span.set_status(Status(StatusCode.ERROR, "Validation failed"))
                 return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
             brand = getattr(request, "brand", None)
@@ -410,7 +430,7 @@ class CancelLicenseView(APIView):
 
                 await handler.handle(command)
 
-                span.set_status(trace.Status(trace.StatusCode.OK))
+                span.set_status(Status(StatusCode.OK))
                 return Response(
                     {"message": "License cancelled successfully"},
                     status=status.HTTP_200_OK,
@@ -418,11 +438,11 @@ class CancelLicenseView(APIView):
 
             except DomainException as e:
                 span.set_attribute("error", "domain_exception")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
+                span.set_status(Status(StatusCode.ERROR, str(e)))
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
+                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -465,7 +485,7 @@ class ListLicensesByEmailView(APIView):
             brand = getattr(request, "brand", None)
             if not brand:
                 span.set_attribute("error", "brand_not_found")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Brand not found"))
+                span.set_status(Status(StatusCode.ERROR, "Brand not found"))
                 return Response({"error": "Brand not found"}, status=status.HTTP_401_UNAUTHORIZED)
 
             span.set_attribute("brand.id", str(brand.id))
@@ -473,7 +493,7 @@ class ListLicensesByEmailView(APIView):
             email = request.query_params.get("email")
             if not email:
                 span.set_attribute("error", "email_required")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Email required"))
+                span.set_status(Status(StatusCode.ERROR, "Email required"))
                 return Response(
                     {"error": "email query parameter is required"},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -496,17 +516,17 @@ class ListLicensesByEmailView(APIView):
 
                 serializer = LicenseListItemSerializer(result, many=True)
                 span.set_attribute("licenses.count", len(result))
-                span.set_status(trace.Status(trace.StatusCode.OK))
+                span.set_status(Status(StatusCode.OK))
 
                 return Response(serializer.data, status=status.HTTP_200_OK)
 
             except DomainException as e:
                 span.set_attribute("error", "domain_exception")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
+                span.set_status(Status(StatusCode.ERROR, str(e)))
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
+                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,

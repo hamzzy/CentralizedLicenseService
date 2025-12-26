@@ -6,6 +6,8 @@ from django.urls import path
 
 from api.v1.brand import views
 
+app_name = "brand"
+
 urlpatterns = [
     path(
         "licenses/provision",

@@ -71,9 +71,12 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
     volumes:
       - grafana_data:/var/lib/grafana
       - ./docker/observability/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./docker/observability/grafana-dashboard-provisioning.yml:/etc/grafana/provisioning/dashboards/dashboard-provider.yml
+      - ./docker/observability/grafana-dashboards.json:/etc/grafana/provisioning/dashboards/license-service-dashboard.json
     depends_on:
       - prometheus
       - loki
@@ -98,12 +101,13 @@ services:
     image: grafana/promtail:latest
     volumes:
       - ./docker/observability/promtail-config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - app_logs:/var/log/license-service:ro
     command: -config.file=/etc/promtail/config.yml
     depends_on:
       - loki
-    # Note: Promtail in Docker Compose can't access Docker socket
-    # For production, use Docker log driver or file-based collection
-    # For now, logs are collected via docker-compose logs and can be forwarded manually
+    user: "0:0"  # Run as root to access Docker socket
 
   tempo:
     image: grafana/tempo:latest
@@ -166,4 +170,5 @@ volumes:
   loki_data:
   tempo_data:
   rabbitmq_data:
+  app_logs:
 

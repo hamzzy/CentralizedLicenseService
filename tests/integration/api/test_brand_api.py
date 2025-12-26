@@ -18,11 +18,13 @@ class TestBrandAPI:
 
     def test_provision_license_success(self, api_client):
         """Test successful license provisioning via API."""
-        # Create brand and API key
+        # Create brand and API key with unique values
+        import uuid
+        unique_id = str(uuid.uuid4())[:8]
         brand = Brand.objects.create(
-            name="RankMath",
-            slug="rankmath",
-            prefix="RM",
+            name=f"TestBrand{unique_id}",
+            slug=f"testbrand{unique_id}",
+            prefix=f"TB{unique_id[:2]}",
         )
         # Create API key and capture raw key
         import hashlib
@@ -45,7 +47,7 @@ class TestBrandAPI:
             slug="rankmath-pro",
         )
 
-        url = reverse("api:v1:brand:provision-license")
+        url = reverse("brand:provision-license")
         response = api_client.post(
             url,
             {
@@ -65,7 +67,7 @@ class TestBrandAPI:
 
     def test_provision_license_invalid_api_key(self, api_client):
         """Test provisioning with invalid API key."""
-        url = reverse("api:v1:brand:provision-license")
+        url = reverse("brand:provision-license")
         response = api_client.post(
             url,
             {
@@ -96,7 +98,7 @@ class TestBrandAPI:
         )
 
         new_expiration = datetime.utcnow() + timedelta(days=730)
-        url = reverse("api:v1:brand:renew-license", kwargs={"license_id": db_license.id})
+        url = reverse("brand:renew-license", kwargs={"license_id": db_license.id})
         response = api_client.patch(
             url,
             {"expiration_date": new_expiration.isoformat()},
@@ -126,7 +128,7 @@ class TestBrandAPI:
         )
 
         url = reverse(
-            "api:v1:brand:suspend-license",
+            "brand:suspend-license",
             kwargs={"license_id": db_license.id},
         )
         response = api_client.patch(url, HTTP_X_API_KEY=raw_key)
@@ -153,7 +155,7 @@ class TestBrandAPI:
             key_hash=key_hash,
         )
 
-        url = reverse("api:v1:brand:list-licenses")
+        url = reverse("brand:list-licenses")
         response = api_client.get(
             url,
             {"email": "test@example.com"},

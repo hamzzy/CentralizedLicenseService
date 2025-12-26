@@ -48,7 +48,7 @@ disable = [
 ]
 
 [tool.pylint.django]
-settings-module = "CentralizedLicenseService.settings"
+django-settings-module = "CentralizedLicenseService.settings"
 
 [tool.pylint."main"]
 ignore-paths = [
@@ -74,6 +74,7 @@ markers = [
     "unit: Unit tests",
     "integration: Integration tests",
     "slow: Slow running tests",
+    "asyncio: Async tests",
 ]
 
 [tool.mypy]

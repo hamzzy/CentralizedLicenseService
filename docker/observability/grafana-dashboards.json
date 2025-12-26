@@ -1,97 +1,351 @@
 {
   "dashboard": {
-    "title": "License Service Dashboard",
-    "tags": ["license-service", "django"],
+    "title": "License Service - Complete Observability",
+    "tags": ["license-service", "django", "observability"],
     "timezone": "browser",
-    "schemaVersion": 27,
+    "schemaVersion": 38,
     "version": 1,
-    "refresh": "30s",
+    "refresh": "10s",
     "panels": [
       {
         "id": 1,
-        "title": "HTTP Request Rate",
-        "type": "graph",
+        "title": "Request Rate by Endpoint",
+        "type": "timeseries",
         "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
         "targets": [
           {
-            "expr": "rate(http_requests_total[5m])",
-            "legendFormat": "{{method}} {{endpoint}}"
+            "expr": "sum(rate(http_requests_total[5m])) by (method, endpoint)",
+            "legendFormat": "{{method}} {{endpoint}}",
+            "refId": "A"
           }
-        ]
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps"
+          }
+        }
       },
       {
         "id": 2,
-        "title": "HTTP Request Duration",
-        "type": "graph",
+        "title": "Request Duration (p50, p95, p99)",
+        "type": "timeseries",
         "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
-            "legendFormat": "p95"
+            "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, endpoint))",
+            "legendFormat": "p50 - {{endpoint}}",
+            "refId": "A"
           },
           {
-            "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))",
-            "legendFormat": "p99"
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, endpoint))",
+            "legendFormat": "p95 - {{endpoint}}",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, endpoint))",
+            "legendFormat": "p99 - {{endpoint}}",
+            "refId": "C"
           }
-        ]
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        }
       },
       {
         "id": 3,
-        "title": "Active Licenses",
-        "type": "graph",
+        "title": "HTTP Status Codes",
+        "type": "timeseries",
         "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
         "targets": [
           {
-            "expr": "active_licenses",
-            "legendFormat": "{{brand_id}} - {{status}}"
+            "expr": "sum(rate(http_requests_total{status_code=~\"2..\"}[5m])) by (status_code)",
+            "legendFormat": "{{status_code}}",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(http_requests_total{status_code=~\"4..\"}[5m])) by (status_code)",
+            "legendFormat": "{{status_code}}",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(http_requests_total{status_code=~\"5..\"}[5m])) by (status_code)",
+            "legendFormat": "{{status_code}}",
+            "refId": "C"
           }
-        ]
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps"
+          }
+        }
       },
       {
         "id": 4,
-        "title": "License Operations",
-        "type": "graph",
+        "title": "Error Rate by Type",
+        "type": "timeseries",
         "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
         "targets": [
           {
-            "expr": "rate(licenses_provisioned_total[5m])",
-            "legendFormat": "Provisioned"
-          },
-          {
-            "expr": "rate(licenses_activated_total[5m])",
-            "legendFormat": "Activated"
-          },
-          {
-            "expr": "rate(licenses_renewed_total[5m])",
-            "legendFormat": "Renewed"
+            "expr": "sum(rate(errors_total[5m])) by (error_type)",
+            "legendFormat": "{{error_type}}",
+            "refId": "A"
           }
-        ]
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps"
+          }
+        }
       },
       {
         "id": 5,
-        "title": "Error Rate",
-        "type": "graph",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "title": "Recent Traces (Tempo)",
+        "type": "traces",
+        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 16},
         "targets": [
           {
-            "expr": "rate(errors_total[5m])",
-            "legendFormat": "{{error_type}}"
+            "queryType": "traceql",
+            "query": "{ service.name=\"license-service\" }",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showTime": true,
+          "spanName": "operation",
+          "query": "{ service.name=\"license-service\" }"
+        }
+      },
+      {
+        "id": 6,
+        "title": "Error Traces",
+        "type": "traces",
+        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 26},
+        "targets": [
+          {
+            "queryType": "traceql",
+            "query": "{ service.name=\"license-service\" status=error }",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showTime": true,
+          "spanName": "operation",
+          "query": "{ service.name=\"license-service\" status=error }"
+        }
+      },
+      {
+        "id": 7,
+        "title": "Application Logs (Loki)",
+        "type": "logs",
+        "gridPos": {"h": 10, "w": 12, "x": 0, "y": 36},
+        "targets": [
+          {
+            "expr": "{job=\"license-service\"} |= \"Request\"",
+            "refId": "A",
+            "datasource": {
+              "type": "loki",
+              "uid": "loki"
+            }
+          }
+        ],
+        "options": {
+          "dedupStrategy": "none",
+          "enableLogDetails": true,
+          "prettifyLogMessage": false,
+          "showCommonLabels": false,
+          "showLabels": false,
+          "showTime": true,
+          "sortOrder": "Descending",
+          "wrapLogMessage": false
+        }
+      },
+      {
+        "id": 8,
+        "title": "Error Logs (Loki)",
+        "type": "logs",
+        "gridPos": {"h": 10, "w": 12, "x": 12, "y": 36},
+        "targets": [
+          {
+            "expr": "{job=\"license-service\"} |= \"error\" | json",
+            "refId": "A",
+            "datasource": {
+              "type": "loki",
+              "uid": "loki"
+            }
+          }
+        ],
+        "options": {
+          "dedupStrategy": "none",
+          "enableLogDetails": true,
+          "prettifyLogMessage": false,
+          "showCommonLabels": false,
+          "showLabels": false,
+          "showTime": true,
+          "sortOrder": "Descending",
+          "wrapLogMessage": false
+        }
+      },
+      {
+        "id": 9,
+        "title": "Trace Duration by Operation",
+        "type": "bargauge",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 46},
+        "targets": [
+          {
+            "queryType": "traceql",
+            "query": "sum(rate({ service.name=\"license-service\" }[5m])) by (operation)",
+            "refId": "A"
           }
         ]
       },
       {
-        "id": 6,
-        "title": "Database Query Duration",
-        "type": "graph",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "id": 10,
+        "title": "Error Rate by Operation",
+        "type": "bargauge",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 46},
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, rate(db_query_duration_seconds_bucket[5m]))",
-            "legendFormat": "p95 - {{operation}}"
+            "queryType": "traceql",
+            "query": "sum(rate({ service.name=\"license-service\" status=error }[5m])) by (operation)",
+            "refId": "A"
           }
         ]
+      },
+      {
+        "id": 11,
+        "title": "Database Query Duration",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 54},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(db_query_duration_seconds_bucket[5m])) by (le, operation))",
+            "legendFormat": "p95 - {{operation}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "id": 12,
+        "title": "Redis Operation Duration",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 54},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(redis_operation_duration_seconds_bucket[5m])) by (le, operation))",
+            "legendFormat": "p95 - {{operation}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "id": 13,
+        "title": "Active Spans by Service",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 62},
+        "targets": [
+          {
+            "queryType": "traceql",
+            "query": "count({ service.name=\"license-service\" })",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 14,
+        "title": "Error Spans",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 62},
+        "targets": [
+          {
+            "queryType": "traceql",
+            "query": "count({ service.name=\"license-service\" status=error })",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 1, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 15,
+        "title": "Total Requests",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 62},
+        "targets": [
+          {
+            "expr": "sum(increase(http_requests_total[1h]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 16,
+        "title": "Total Errors",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 62},
+        "targets": [
+          {
+            "expr": "sum(increase(errors_total[1h]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 1, "color": "red"}
+              ]
+            }
+          }
+        }
       }
-    ]
+    ],
+    "templating": {
+      "list": []
+    },
+    "annotations": {
+      "list": []
+    },
+    "links": []
   }
 }
-

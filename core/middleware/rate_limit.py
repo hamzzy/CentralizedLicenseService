@@ -5,7 +5,7 @@ Implements rate limiting per API key with configurable limits.
 """
 
 import time
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple
 
 from django.core.cache import cache
 from django.http import HttpRequest, HttpResponse, JsonResponse
@@ -68,7 +68,7 @@ class RateLimitMiddleware:
         key_hash = hashlib.sha256(api_key.encode()).hexdigest()[:16]
         return f"rate_limit:{key_hash}"
 
-    def _check_rate_limit(self, api_key: str, limit: int = None) -> tuple[bool, int, int]:
+    def _check_rate_limit(self, api_key: str, limit: int = None) -> Tuple[bool, int, int]:
         """
         Check if request is within rate limit.
 
