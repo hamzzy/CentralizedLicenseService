@@ -27,6 +27,22 @@ class Product(models.Model):
             models.Index(fields=["brand", "slug"]),
         ]
 
+    def clean(self):
+        """Validate product fields."""
+        from django.core.exceptions import ValidationError
+
+        if not self.brand_id:
+            raise ValidationError("Brand is required")
+        if not self.slug:
+            raise ValidationError("Slug is required")
+        if not self.name:
+            raise ValidationError("Name is required")
+
+    def save(self, *args, **kwargs):
+        """Save product with validation."""
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.brand.name} - {self.name}"
 

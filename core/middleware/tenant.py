@@ -6,7 +6,8 @@ and makes it available throughout the request lifecycle.
 """
 import contextvars
 import logging
-from typing import Callable
+import uuid
+from typing import Callable, Optional
 
 from django.http import HttpRequest, HttpResponse
 from django.utils.functional import SimpleLazyObject
@@ -19,16 +20,18 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-# Context variable for tenant (brand) ID
-tenant_context: contextvars.ContextVar[int] = contextvars.ContextVar("tenant_id", default=None)
+# Context variable for tenant (brand) ID - using UUID
+tenant_context: contextvars.ContextVar[Optional[uuid.UUID]] = contextvars.ContextVar(
+    "tenant_id", default=None
+)
 
 
-def get_current_tenant_id() -> int:
+def get_current_tenant_id() -> Optional[uuid.UUID]:
     """
     Get the current tenant (brand) ID from context.
 
     Returns:
-        Brand ID or None if not set
+        Brand ID (UUID) or None if not set
     """
     return tenant_context.get(None)
 

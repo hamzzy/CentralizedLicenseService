@@ -33,6 +33,28 @@ class Brand(models.Model):
             models.Index(fields=["slug"]),
             models.Index(fields=["prefix"]),
         ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(prefix__length__gte=2) & models.Q(prefix__length__lte=10),
+                name="prefix_length_valid",
+            ),
+        ]
+
+    def clean(self):
+        """Validate brand fields."""
+        from django.core.exceptions import ValidationError
+
+        if not self.prefix:
+            raise ValidationError("Prefix is required")
+        if len(self.prefix) < 2 or len(self.prefix) > 10:
+            raise ValidationError("Prefix must be between 2 and 10 characters")
+        if not self.prefix.replace("-", "").replace("_", "").isalnum():
+            raise ValidationError("Prefix must contain only alphanumeric characters, hyphens, or underscores")
+
+    def save(self, *args, **kwargs):
+        """Save brand with validation."""
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -82,6 +104,13 @@ class ApiKey(models.Model):
     def __str__(self):
         return f"{self.brand.name} - {self.key_prefix}..."
 
+    def clean(self):
+        """Validate API key fields."""
+        from django.core.exceptions import ValidationError
+
+        if not self.brand_id:
+            raise ValidationError("Brand is required")
+
     def save(self, *args, **kwargs):
         """Generate API key on first save."""
         if not self.key_hash:
@@ -91,6 +120,7 @@ class ApiKey(models.Model):
             self.key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
             # Store the raw key temporarily for retrieval
             self._raw_key = raw_key
+        self.full_clean()
         super().save(*args, **kwargs)
 
     def verify_key(self, raw_key: str) -> bool:

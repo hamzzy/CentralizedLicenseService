@@ -51,12 +51,24 @@ class LicenseKey(models.Model):
     def __str__(self):
         return self.key
 
+    def clean(self):
+        """Validate license key fields."""
+        from django.core.exceptions import ValidationError
+
+        if not self.brand_id:
+            raise ValidationError("Brand is required")
+        if not self.brand.prefix:
+            raise ValidationError("Brand prefix is required")
+
     def save(self, *args, **kwargs):
         """Generate license key and hash on first save."""
         if not self.key:
+            if not self.brand_id:
+                raise ValueError("Brand must be set before generating license key")
             self.key = generate_license_key(self.brand.prefix)
         if not self.key_hash:
             self.key_hash = hashlib.sha256(self.key.encode()).hexdigest()
+        self.full_clean()
         super().save(*args, **kwargs)
 
     def verify_key(self, raw_key: str) -> bool:
@@ -104,6 +116,14 @@ class License(models.Model):
             models.Index(fields=["license_key", "product"]),
             models.Index(fields=["license_key", "status"]),
             models.Index(fields=["status"]),
+            models.Index(fields=["expires_at"]),
+            models.Index(fields=["license_key", "status", "expires_at"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(seat_limit__gte=1),
+                name="seat_limit_positive",
+            ),
         ]
 
     def __str__(self):
@@ -161,6 +181,10 @@ class License(models.Model):
         Args:
             new_expiration: New expiration datetime
         """
+        from django.core.exceptions import ValidationError
+
+        if new_expiration and new_expiration < timezone.now():
+            raise ValidationError("Expiration date cannot be in the past")
         self.expires_at = new_expiration
         if self.status == "expired":
             self.status = "valid"
@@ -209,13 +233,30 @@ class Activation(models.Model):
         indexes = [
             models.Index(fields=["license", "instance_identifier"]),
             models.Index(fields=["license", "is_active"]),
+            models.Index(fields=["license", "is_active", "activated_at"]),
         ]
 
     def __str__(self):
         return f"{self.license.license_key.key} @ {self.instance_identifier}"
 
+    def clean(self):
+        """Validate activation fields."""
+        from django.core.exceptions import ValidationError
+
+        if not self.instance_identifier or len(self.instance_identifier.strip()) == 0:
+            raise ValidationError("Instance identifier cannot be empty")
+        if len(self.instance_identifier) > 500:
+            raise ValidationError("Instance identifier too long")
+
+    def save(self, *args, **kwargs):
+        """Save activation with validation."""
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def deactivate(self):
         """Deactivate this activation, freeing a seat."""
+        if not self.is_active:
+            return  # Already deactivated
         self.is_active = False
         self.deactivated_at = timezone.now()
         self.save()
