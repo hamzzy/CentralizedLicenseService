@@ -5,6 +5,7 @@ Domain events represent something that happened in the brand domain.
 """
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from core.domain.events import DomainEvent
 
