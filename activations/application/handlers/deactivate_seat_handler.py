@@ -55,12 +55,15 @@ class DeactivateSeatHandler:
             raise InvalidLicenseKeyError("Invalid license key")
 
         # Find license by license key (we need to get the license)
+        # Note: This handler should receive LicenseRepository via DI
+        # For now, we'll find activation directly by instance identifier
+        # across all licenses for this key
         from licenses.ports.license_repository import LicenseRepository
         from licenses.infrastructure.repositories.django_license_repository import (
             DjangoLicenseRepository,
         )
 
-        license_repo = DjangoLicenseRepository()
+        license_repo: LicenseRepository = DjangoLicenseRepository()
         licenses = await license_repo.find_by_license_key(license_key.id)
 
         # Find activation by license and instance
