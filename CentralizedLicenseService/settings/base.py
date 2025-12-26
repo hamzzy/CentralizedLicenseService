@@ -33,27 +33,8 @@ INSTALLED_APPS = [
     "api",
 ]
 
-# Register event handlers at startup
-try:
-    from core.infrastructure.event_handlers import register_event_handlers
-
-    register_event_handlers()
-except Exception as e:
-    import logging
-
-    logger = logging.getLogger(__name__)
-    logger.warning(f"Failed to register event handlers: {e}")
-
-# Setup OpenTelemetry instrumentation
-try:
-    from core.instrumentation import setup_opentelemetry
-
-    setup_opentelemetry()
-except Exception as e:
-    import logging
-
-    logger = logging.getLogger(__name__)
-    logger.warning(f"Failed to setup OpenTelemetry: {e}")
+# Note: Event handlers and OpenTelemetry are registered in __init__.py
+# after Django apps are loaded
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
