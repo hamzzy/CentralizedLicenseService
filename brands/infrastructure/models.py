@@ -19,7 +19,9 @@ class Brand(models.Model):
     name = models.CharField(max_length=255, help_text="Brand display name")
     slug = models.SlugField(max_length=100, unique=True, help_text="URL-safe identifier")
     prefix = models.CharField(
-        max_length=10, unique=True, help_text="License key prefix (e.g., 'RM' for RankMath)"
+        max_length=10,
+        unique=True,
+        help_text="License key prefix (e.g., 'RM' for RankMath)",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -61,7 +63,9 @@ class ApiKey(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name="api_keys")
     key_prefix = models.CharField(max_length=8, editable=False)
-    key_hash = models.CharField(max_length=64, editable=False, db_index=True)
+    key_hash = models.CharField(
+        max_length=64, editable=False, db_index=True
+    )
     scope = models.CharField(max_length=20, choices=SCOPE_CHOICES, default="full")
     expires_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -100,7 +104,9 @@ class ApiKey(models.Model):
             True if key matches, False otherwise
         """
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
-        return secrets.compare_digest(self.key_hash, key_hash)
+        return secrets.compare_digest(
+            self.key_hash, key_hash
+        )
 
     def is_valid(self) -> bool:
         """
