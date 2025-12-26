@@ -5,13 +5,31 @@ These settings are shared across all environments.
 Environment-specific overrides are in dev.py, test.py, and prod.py
 """
 
+import os
 from pathlib import Path
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+
+    # Load .env file from project root
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent
+    env_path = BASE_DIR / ".env"
+    if env_path.exists():
+        load_dotenv(env_path)
+        print(f"Loaded environment variables from {env_path}")  # noqa: T201
+except ImportError:
+    # python-dotenv not installed, skip
+    pass
 
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-di-wb)r%$w)(io5t9w^^hk(&*y_(v1z(a0!@+ah#3hs!0)9t(3"
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-di-wb)r%$w)(io5t9w^^hk(&*y_(v1z(a0!@+ah#3hs!0)9t(3",
+)
 
 # Application definition
 INSTALLED_APPS = [
@@ -159,7 +177,7 @@ SPECTACULAR_SETTINGS = {
                 "type": "apiKey",
                 "in": "header",
                 "name": "X-API-Key",
-                "description": "API key for brand authentication",
+                "description": "API key for brand authentication. Get your API key from the brand admin panel.",
             },
             "LicenseKeyAuth": {
                 "type": "apiKey",
@@ -168,6 +186,14 @@ SPECTACULAR_SETTINGS = {
                 "description": "License key for product authentication",
             },
         }
+    },
+    "EXTENSIONS_INFO": {
+        "x-code-samples": [
+            {
+                "lang": "curl",
+                "source": 'curl -X POST "https://api.example.com/api/v1/brand/licenses/provision" \\\n  -H "X-API-Key: your-api-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"customer_email": "customer@example.com", "products": ["product-uuid"]}\'',
+            }
+        ],
     },
 }
 

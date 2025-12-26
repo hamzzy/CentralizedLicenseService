@@ -3,103 +3,7 @@
 A multi-tenant, scalable license management service built with Django, following
 Hexagonal Architecture, CQRS, and Modular Monolith patterns.
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Features](#features)
-- [Getting Started](#getting-started)
-- [API Documentation](#api-documentation)
-- [Development](#development)
-- [Testing](#testing)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
-
-## Overview
-
-The Centralized License Service provides a single source of truth for managing
-licenses and entitlements across multiple brands and products. It supports:
-
-- **Multi-tenancy**: Row-level data isolation per brand
-- **License Provisioning**: Create and manage licenses for customers
-- **License Activation**: Product-facing APIs for license activation
-- **Seat Management**: Control concurrent activations per license
-- **Lifecycle Management**: Renew, suspend, resume, and cancel licenses
-- **Audit Trail**: Complete audit logging for all operations
-
-## Architecture
-
-This service follows a **Modular Monolith + Hexagonal Architecture + Strategic
-CQRS** design:
-
-### Modular Monolith
-
-The application is organized into modules:
-- `brands/`: Brand and product management
-- `licenses/`: License key and license management
-- `activations/`: License activation and seat management
-- `core/`: Shared infrastructure and domain primitives
-- `api/`: REST API layer
-
-### Hexagonal Architecture (Ports & Adapters)
-
-- **Domain Layer**: Pure business logic, no dependencies
-- **Application Layer**: Use cases, commands, queries, handlers
-- **Infrastructure Layer**: Django ORM, Redis, external services
-- **Ports**: Repository interfaces, event bus, cache interfaces
-
-### CQRS (Command Query Responsibility Segregation)
-
-- **Commands**: Write operations (provision, renew, suspend, activate)
-- **Queries**: Read operations (get status, list licenses)
-- **Handlers**: Separate command and query handlers
-
-### Key Design Principles
-
-- **SOLID Principles**: Single Responsibility, Open/Closed, Liskov Substitution,
-  Interface Segregation, Dependency Inversion
-- **Domain-Driven Design**: Rich domain models with business logic
-- **Event-Driven**: Domain events for decoupled communication
-- **Async-First**: ASGI support, async views, async ORM operations
-
-## Features
-
-### Brand APIs
-
-- **Provision License**: Create license keys and licenses for customers
-- **Renew License**: Extend license expiration dates
-- **Suspend/Resume License**: Temporarily disable licenses
-- **Cancel License**: Permanently cancel licenses
-- **List Licenses**: Query licenses by customer email
-
-### Product APIs
-
-- **Activate License**: Activate a license on a specific instance
-- **Check License Status**: Verify license validity and seat availability
-- **Deactivate Seat**: Release a seat for reuse
-
-### Multi-Tenancy
-
-- API key-based authentication per brand
-- Automatic tenant context isolation
-- Row-level security enforced at middleware level
-
-### Observability
-
-- **OpenTelemetry**: Distributed tracing, metrics, and auto-instrumentation
-- **Prometheus**: Metrics collection and storage
-- **Grafana**: Visualization dashboards
-- **Loki**: Log aggregation and querying
-- **Tempo**: Distributed tracing backend
-- Structured logging with correlation IDs and trace IDs
-- Health check endpoints (`/health`, `/health/db`, `/health/cache`, `/ready`)
-- Request duration tracking
-- Audit logging for all license operations
-- Custom business metrics (license operations, seat usage, etc.)
-
-See [Observability Guide](docs/OBSERVABILITY.md) for detailed information.
-
-## Getting Started
+## Quick Start
 
 ### Prerequisites
 
@@ -110,291 +14,187 @@ See [Observability Guide](docs/OBSERVABILITY.md) for detailed information.
 
 ### Installation
 
-1. **Clone the repository**:
-
 ```bash
+# Clone repository
 git clone <repository-url>
 cd CentralizedLicenseService
-```
 
-2. **Create virtual environment**:
-
-```bash
+# Create virtual environment
 python3 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
+source .venv/bin/activate
 
-3. **Install dependencies**:
-
-```bash
+# Install dependencies
 pip install -r requirements/dev.txt
-```
 
-4. **Set up environment variables**:
+# Create .env file (optional - for custom configuration)
+# See Environment Variables section below
+cp .env.example .env  # if .env.example exists
 
-Create a `.env` file:
-
-```bash
-DJANGO_SECRET_KEY=your-secret-key-here
-DJANGO_DEBUG=True
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/license_service
-REDIS_URL=redis://localhost:6379/0
-```
-
-5. **Run migrations**:
-
-```bash
+# Run migrations
 python manage.py migrate
-```
 
-6. **Create superuser** (optional):
+# Create test data (superuser, brand, API key, product)
+python manage.py create_test_data
 
-```bash
-python manage.py createsuperuser
-```
-
-7. **Start development server**:
-
-```bash
+# Start development server
 python manage.py runserver
 ```
 
+### Environment Variables
+
+The application supports loading environment variables from a `.env` file in the project root. Create a `.env` file with the following variables (all optional):
+
+```bash
+# Django
+DJANGO_SECRET_KEY=your-secret-key-here
+DEBUG=True
+
+# Database
+DB_ENGINE=postgresql  # or 'sqlite' for SQLite
+DB_NAME=license_service
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_HOST=localhost
+DB_PORT=5432
+DOCKER_ENV=false  # Set to 'true' when running in Docker
+
+# Redis
+REDIS_URL=redis://127.0.0.1:6379/1
+
+# RabbitMQ (optional)
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/
+USE_RABBITMQ=false
+
+# OpenTelemetry
+OTEL_SERVICE_NAME=license-service
+OTEL_SERVICE_VERSION=1.0.0
+ENVIRONMENT=development
+OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+PROMETHEUS_PORT=9090
+
+# Rate Limiting
+RATE_LIMIT_ENABLED=true
+DEFAULT_RATE_LIMIT=100
+RATE_LIMIT_WINDOW=60
+```
+
+**Note**: If no `.env` file exists, the application will use default values from settings files.
+
 ### Docker Setup
 
-1. **Start services**:
-
 ```bash
+# Start all services
 docker-compose up -d
+
+# Run migrations
+docker-compose exec app python manage.py migrate
+
+# Create test data (superuser, brand, API key, product)
+docker-compose exec app python manage.py create_test_data
+
+# Access services
+# - API: http://localhost:8000
+# - Admin: http://localhost:8000/admin
+# - Grafana: http://localhost:3000 (admin/admin)
+# - Prometheus: http://localhost:9091
 ```
 
-2. **Run migrations**:
+## Documentation
+
+- **[Architecture & Design](docs/ARCHITECTURE.md)**: Complete architecture documentation including multi-tenancy, integration points, data model, and observability
+- **[API Documentation](docs/API.md)**: Detailed API reference
+- **[Observability Guide](docs/OBSERVABILITY.md)**: Logging, metrics, and tracing setup
+- **[Explanation & Design Decisions](EXPLANATION.md)**: Detailed explanation of problem statement, architecture decisions, trade-offs, and implementation details
+
+## Features
+
+- **Multi-tenancy**: Row-level data isolation per brand
+- **License Management**: Provision, renew, suspend, resume, and cancel licenses
+- **License Activation**: Product-facing APIs for license activation
+- **Seat Management**: Control concurrent activations per license
+- **Observability**: Comprehensive logging, metrics, and distributed tracing
+- **Resilience**: Error handling, retry logic, and graceful degradation
+
+
+## API Endpoints
+
+### Brand APIs (Authenticated)
+
+- `POST /api/v1/brand/licenses/provision` - Provision license
+- `POST /api/v1/brand/licenses/{id}/renew` - Renew license
+- `POST /api/v1/brand/licenses/{id}/suspend` - Suspend license
+- `POST /api/v1/brand/licenses/{id}/resume` - Resume license
+- `POST /api/v1/brand/licenses/{id}/cancel` - Cancel license
+- `GET /api/v1/brand/licenses?email=...` - List licenses by email
+
+### Product APIs (Public)
+
+- `POST /api/v1/product/licenses/activate` - Activate license
+- `GET /api/v1/product/licenses/check` - Check license status
+- `POST /api/v1/product/licenses/deactivate` - Deactivate seat
+
+### Health Checks
+
+- `GET /health` - Basic health check
+- `GET /health/db` - Database health
+- `GET /health/cache` - Cache health
+- `GET /ready` - Readiness check
+
+See [API Documentation](docs/API.md) for detailed API reference.
+
+
+## Testing & Test Data
+
+### Creating Test Data
+
+The application includes a management command to quickly create test data for development and testing:
 
 ```bash
-docker-compose exec app python manage.py migrate
+# Create all test data (superuser, brand, API key, product, license)
+python manage.py create_test_data
+
+# Skip superuser creation
+python manage.py create_test_data --skip-superuser
+
+# Skip license creation
+python manage.py create_test_data --skip-license
+
+# Customize brand and product names
+python manage.py create_test_data \
+    --brand-name "My Brand" \
+    --brand-prefix "MB" \
+    --product-name "My Product" \
+    --customer-email "customer@example.com"
 ```
 
-3. **Access the service**:
-
-- API: http://localhost:8000
-- Admin: http://localhost:8000/admin
-- Swagger UI: http://localhost:8000/api/docs/
-- ReDoc: http://localhost:8000/api/redoc/
-- OpenAPI Schema: http://localhost:8000/api/schema/
-- **Grafana**: http://localhost:3000 (admin/admin)
-- **Prometheus**: http://localhost:9091
-- **Prometheus Metrics**: http://localhost:9090/metrics
-
-## API Documentation
-
-### Interactive API Documentation
-
-The service provides interactive API documentation via Swagger UI and ReDoc:
-
-- **Swagger UI**: http://localhost:8000/api/docs/
-- **ReDoc**: http://localhost:8000/api/redoc/
-- **OpenAPI Schema (JSON)**: http://localhost:8000/api/schema/
-
-The OpenAPI schema is automatically generated from your Django REST Framework views
-and serializers using `drf-spectacular`.
-
-### Authentication
-
-#### Brand APIs
-
-Brand APIs require authentication via API key:
-
-```http
-X-API-Key: your-api-key-here
+**In Docker:**
+```bash
+docker-compose exec app python manage.py create_test_data
 ```
 
-Or via Authorization header:
+The command creates:
+- **Superuser**: `admin` / `admin` (for Django admin)
+- **Brand**: Test brand with auto-generated slug and prefix
+- **API Key**: Full-access API key for the brand (save this - it can't be retrieved later!)
+- **Product**: Test product for the brand
+- **License Key & License**: Optional test license (can be skipped with `--skip-license`)
 
-```http
-Authorization: Bearer your-api-key-here
-```
+After running the command, you'll see a summary with:
+- Django admin credentials
+- Brand details
+- API key (save this!)
+- Product details
+- Example API request using the generated API key
 
-#### Product APIs
+### Django Admin
 
-Product APIs authenticate using license keys in the request body.
+Access the Django admin at `http://localhost:8000/admin/` with the superuser credentials created by `create_test_data`:
+- Username: `admin`
+- Password: `admin`
 
-### Brand API Endpoints
-
-#### Provision License
-
-Create a new license key and associated licenses.
-
-```http
-POST /api/v1/brand/licenses/provision
-Content-Type: application/json
-X-API-Key: your-api-key
-
-{
-  "customer_email": "customer@example.com",
-  "products": ["product-uuid-1", "product-uuid-2"],
-  "expiration_date": "2025-12-31T23:59:59Z",
-  "max_seats": 5,
-  "idempotency_key": "optional-idempotency-key"
-}
-```
-
-**Response** (201 Created):
-
-```json
-{
-  "license_key": {
-    "id": "uuid",
-    "key": "BRAND-XXXX-XXXX-XXXX-XXXX",
-    "customer_email": "customer@example.com",
-    "created_at": "2024-01-01T00:00:00Z"
-  },
-  "licenses": [
-    {
-      "id": "uuid",
-      "product_id": "uuid",
-      "status": "valid",
-      "seat_limit": 5,
-      "expires_at": "2025-12-31T23:59:59Z"
-    }
-  ]
-}
-```
-
-#### Renew License
-
-Extend a license's expiration date.
-
-```http
-POST /api/v1/brand/licenses/{license_id}/renew
-Content-Type: application/json
-X-API-Key: your-api-key
-
-{
-  "expiration_date": "2026-12-31T23:59:59Z"
-}
-```
-
-#### Suspend License
-
-Temporarily disable a license.
-
-```http
-POST /api/v1/brand/licenses/{license_id}/suspend
-X-API-Key: your-api-key
-```
-
-#### Resume License
-
-Re-enable a suspended license.
-
-```http
-POST /api/v1/brand/licenses/{license_id}/resume
-X-API-Key: your-api-key
-```
-
-#### Cancel License
-
-Permanently cancel a license.
-
-```http
-POST /api/v1/brand/licenses/{license_id}/cancel
-X-API-Key: your-api-key
-```
-
-#### List Licenses by Email
-
-Query all licenses for a customer.
-
-```http
-GET /api/v1/brand/licenses?email=customer@example.com
-X-API-Key: your-api-key
-```
-
-### Product API Endpoints
-
-#### Activate License
-
-Activate a license on a specific instance.
-
-```http
-POST /api/v1/product/licenses/activate
-Content-Type: application/json
-
-{
-  "license_key": "BRAND-XXXX-XXXX-XXXX-XXXX",
-  "instance_identifier": "https://example.com",
-  "instance_type": "url"
-}
-```
-
-**Response** (201 Created):
-
-```json
-{
-  "activation_id": "uuid",
-  "status": "active",
-  "seats_used": 1,
-  "seats_remaining": 4
-}
-```
-
-#### Check License Status
-
-Verify license validity and seat availability.
-
-```http
-GET /api/v1/product/licenses/check?license_key=BRAND-XXXX-XXXX-XXXX-XXXX&instance_identifier=https://example.com
-```
-
-**Response** (200 OK):
-
-```json
-{
-  "is_valid": true,
-  "license": {
-    "id": "uuid",
-    "status": "valid",
-    "seat_limit": 5,
-    "seats_used": 1,
-    "seats_remaining": 4,
-    "expires_at": "2025-12-31T23:59:59Z"
-  }
-}
-```
-
-#### Deactivate Seat
-
-Release a seat for reuse.
-
-```http
-POST /api/v1/product/licenses/deactivate
-Content-Type: application/json
-
-{
-  "license_key": "BRAND-XXXX-XXXX-XXXX-XXXX",
-  "instance_identifier": "https://example.com"
-}
-```
-
-### Health Check Endpoints
-
-- `GET /health`: Basic health check
-- `GET /health/db`: Database connectivity check
-- `GET /health/cache`: Cache connectivity check
-- `GET /ready`: Readiness check (all dependencies)
+**Note**: Change the admin password in production!
 
 ## Development
-
-### Code Style
-
-This project follows WP Media's Python engineering best practices:
-
-- **Black**: Code formatting (100 char line length)
-- **isort**: Import sorting
-- **Pylint**: Linting
-- **MyPy**: Type checking
-- **Pytest**: Testing framework
-
-### Running Linters
 
 ```bash
 # Format code
@@ -403,99 +203,16 @@ black .
 # Sort imports
 isort .
 
-# Lint
-pylint .
-
-# Type check
-mypy .
-```
-
-### Project Structure
-
-```
-CentralizedLicenseService/
-├── api/                    # API layer
-│   └── v1/
-│       ├── brand/         # Brand-facing APIs
-│       └── product/       # Product-facing APIs
-├── brands/                # Brands module
-│   ├── domain/            # Domain entities and services
-│   ├── application/       # Use cases and handlers
-│   ├── infrastructure/    # Django models and repositories
-│   └── ports/            # Repository interfaces
-├── licenses/             # Licenses module
-├── activations/          # Activations module
-├── core/                 # Shared infrastructure
-│   ├── domain/           # Domain primitives
-│   ├── infrastructure/    # Infrastructure adapters
-│   └── middleware/       # Django middleware
-├── products/            # Products module
-├── tests/               # Test suite
-└── requirements/        # Python dependencies
-```
-
-## Testing
-
-### Running Tests
-
-```bash
-# Run all tests
+# Run tests
 pytest
 
 # Run with coverage
 pytest --cov=. --cov-report=html
-
-# Run specific test categories
-pytest -m unit
-pytest -m integration
-
-# Run specific test file
-pytest tests/unit/brands/test_brand_entity.py
 ```
 
-### Test Structure
+## License
 
-- `tests/unit/`: Unit tests for domain logic
-- `tests/integration/`: Integration tests for APIs and repositories
-
-## Deployment
-
-### Production Settings
-
-Set the following environment variables:
-
-```bash
-DJANGO_SECRET_KEY=your-production-secret-key
-DJANGO_DEBUG=False
-DJANGO_ALLOWED_HOSTS=your-domain.com
-DATABASE_URL=postgresql://user:pass@host:5432/dbname
-REDIS_URL=redis://host:6379/0
-```
-
-### Docker Production Build
-
-```bash
-docker build -f docker/app/Dockerfile -t license-service:latest .
-```
-
-### uWSGI Configuration
-
-The project includes `uwsgi.ini` for production deployment. Run:
-
-```bash
-uwsgi --ini uwsgi.ini
-```
-
-### Background Tasks
-
-Register event handlers and run expiration checks:
-
-```bash
-python manage.py register_event_handlers
-python manage.py check_license_expirations
-```
-
-Set up a cron job or scheduler for periodic expiration checks.
+[Your License Here]
 
 ## Contributing
 

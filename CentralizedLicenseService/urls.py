@@ -23,7 +23,11 @@ urlpatterns = [
     # Swagger UI
     path(
         "api/docs/",
-        SpectacularSwaggerView.as_view(url_name="schema"),
+        SpectacularSwaggerView.as_view(
+            url_name="schema",
+            authentication_classes=[],  # No DRF auth, using middleware
+            permission_classes=[],  # No DRF permissions
+        ),
         name="swagger-ui",
     ),
     # ReDoc

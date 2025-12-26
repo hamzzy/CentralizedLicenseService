@@ -4,8 +4,6 @@ Logging configuration for structured logging to Loki.
 This module configures JSON logging that works well with Loki.
 """
 
-import json
-import logging
 import sys
 
 from pythonjsonlogger import jsonlogger
@@ -49,10 +47,13 @@ def get_logging_config(environment: str = "development") -> dict:
         "formatters": {
             "json": {
                 "()": CustomJsonFormatter,
-                "format": "%(asctime)s %(name)s %(levelname)s %(message)s %(pathname)s %(lineno)d %(funcName)s",
+                "format": (
+                    "%(asctime)s %(name)s %(levelname)s %(message)s "
+                    "%(pathname)s %(lineno)d %(funcName)s %(exc_info)s"
+                ),
             },
             "verbose": {
-                "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+                "format": ("{levelname} {asctime} {module} {process:d} " "{thread:d} {message}"),
                 "style": "{",
             },
             "simple": {
@@ -87,7 +88,7 @@ def get_logging_config(environment: str = "development") -> dict:
             },
             "django.request": {
                 "handlers": ["console"],
-                "level": "INFO",
+                "level": "ERROR",  # Show errors with full stack trace
                 "propagate": False,
             },
             "django.db.backends": {
@@ -98,6 +99,11 @@ def get_logging_config(environment: str = "development") -> dict:
             "django.server": {
                 "handlers": ["console"],
                 "level": "INFO",
+                "propagate": False,
+            },
+            "django.template": {
+                "handlers": ["console"],
+                "level": "ERROR",
                 "propagate": False,
             },
             "core": {
