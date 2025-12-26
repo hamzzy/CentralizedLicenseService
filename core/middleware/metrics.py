@@ -3,6 +3,7 @@ Metrics middleware for Prometheus.
 
 Records HTTP request metrics for monitoring.
 """
+
 import time
 from typing import Callable
 
@@ -53,4 +54,3 @@ class MetricsMiddleware:
         ).observe(duration)
 
         return response
-

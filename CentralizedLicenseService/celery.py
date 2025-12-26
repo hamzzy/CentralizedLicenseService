@@ -3,6 +3,7 @@ Celery configuration for background tasks.
 
 Used for webhook delivery and event processing.
 """
+
 import os
 
 from celery import Celery
@@ -23,4 +24,3 @@ app.autodiscover_tasks()
 def debug_task(self):
     """Debug task for testing Celery."""
     print(f"Request: {self.request!r}")
-

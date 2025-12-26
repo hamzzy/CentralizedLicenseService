@@ -3,6 +3,7 @@ Rate limiting middleware.
 
 Implements rate limiting per API key with configurable limits.
 """
+
 import time
 from typing import Callable, Optional
 
@@ -67,9 +68,7 @@ class RateLimitMiddleware:
         key_hash = hashlib.sha256(api_key.encode()).hexdigest()[:16]
         return f"rate_limit:{key_hash}"
 
-    def _check_rate_limit(
-        self, api_key: str, limit: int = None
-    ) -> tuple[bool, int, int]:
+    def _check_rate_limit(self, api_key: str, limit: int = None) -> tuple[bool, int, int]:
         """
         Check if request is within rate limit.
 
@@ -137,7 +136,9 @@ class RateLimitMiddleware:
             HTTP response with rate limit headers
         """
         # Skip rate limiting for health checks and admin
-        if request.path.startswith(("/health", "/ready", "/admin", "/api/docs", "/api/redoc", "/api/schema")):
+        if request.path.startswith(
+            ("/health", "/ready", "/admin", "/api/docs", "/api/redoc", "/api/schema")
+        ):
             return self.get_response(request)
 
         # Only rate limit brand APIs (they have API keys)
@@ -158,9 +159,7 @@ class RateLimitMiddleware:
 
         if not is_allowed:
             # Rate limit exceeded
-            errors_total.labels(
-                error_type="rate_limit_exceeded", endpoint=request.path
-            ).inc()
+            errors_total.labels(error_type="rate_limit_exceeded", endpoint=request.path).inc()
 
             response = JsonResponse(
                 {
@@ -182,4 +181,3 @@ class RateLimitMiddleware:
         response["Retry-After"] = str(max(0, reset_time - int(time.time())))
 
         return response
-

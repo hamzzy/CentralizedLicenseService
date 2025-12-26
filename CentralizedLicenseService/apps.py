@@ -1,6 +1,7 @@
 """
 App configuration for Centralized License Service.
 """
+
 from django.apps import AppConfig
 
 
@@ -15,9 +16,22 @@ class CentralizedLicenseServiceConfig(AppConfig):
         # Only run in main process (not in management commands that don't need it)
         import sys
 
-        if "migrate" not in sys.argv and "makemigrations" not in sys.argv:
+        # Skip for management commands
+        if len(sys.argv) > 1 and sys.argv[1] in [
+            "migrate",
+            "makemigrations",
+            "collectstatic",
+            "shell",
+            "test",
+            "check",
+        ]:
+            return
+
+        # Only setup once (avoid duplicate registration in multi-process environments)
+        if not hasattr(self, "_initialized"):
             self.setup_observability()
             self.register_event_handlers()
+            self._initialized = True
 
     def setup_observability(self):
         """Setup observability after apps are ready."""
@@ -44,4 +58,3 @@ class CentralizedLicenseServiceConfig(AppConfig):
 
             logger = logging.getLogger(__name__)
             logger.warning(f"Failed to register event handlers: {e}")
-

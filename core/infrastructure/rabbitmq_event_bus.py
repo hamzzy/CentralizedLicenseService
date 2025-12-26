@@ -3,6 +3,7 @@ RabbitMQ implementation of EventBus.
 
 Replaces InMemoryEventBus with RabbitMQ for distributed event processing.
 """
+
 import json
 import logging
 from typing import Any, Callable, Dict, List, Optional
@@ -156,4 +157,3 @@ class RabbitMQEventBus(EventBus):
         except Exception as e:
             logger.error(f"Failed to handle message: {e}", exc_info=True)
             message.reject(requeue=True)
-

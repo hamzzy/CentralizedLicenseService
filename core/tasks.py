@@ -3,6 +3,7 @@ Celery tasks for background processing.
 
 Tasks for webhook delivery and event processing.
 """
+
 import logging
 
 from CentralizedLicenseService.celery import app
@@ -13,9 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @app.task(bind=True, max_retries=3)
-def deliver_webhook_task(
-    self, webhook_config_id: str, event_type: str, payload: dict
-):
+def deliver_webhook_task(self, webhook_config_id: str, event_type: str, payload: dict):
     """
     Celery task for webhook delivery.
 
@@ -36,9 +35,7 @@ def deliver_webhook_task(
 
         loop = asyncio.get_event_loop()
         success = loop.run_until_complete(
-            WebhookDeliveryService.deliver_webhook(
-                webhook_config, event_type, payload
-            )
+            WebhookDeliveryService.deliver_webhook(webhook_config, event_type, payload)
         )
 
         if not success:
@@ -46,7 +43,7 @@ def deliver_webhook_task(
 
     except Exception as exc:
         logger.error(f"Webhook delivery failed: {exc}", exc_info=True)
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @app.task
@@ -85,4 +82,3 @@ def process_event_from_rabbitmq(event_data: dict):
             loop.run_until_complete(handler.handle(data))
         except Exception as e:
             logger.error(f"Handler {handler.__class__.__name__} failed: {e}")
-

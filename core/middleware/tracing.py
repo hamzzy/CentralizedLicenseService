@@ -3,6 +3,7 @@ Tracing middleware for OpenTelemetry.
 
 Adds distributed tracing to all requests.
 """
+
 import time
 from typing import Callable
 
@@ -64,4 +65,3 @@ class TracingMiddleware:
                 span.set_status(trace.Status(trace.StatusCode.ERROR))
 
             return response
-

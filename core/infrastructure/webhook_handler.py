@@ -3,6 +3,7 @@ Webhook event handler.
 
 Delivers webhooks when domain events occur.
 """
+
 import logging
 from typing import Dict
 
@@ -80,4 +81,3 @@ class WebhookEventHandler(EventHandler):
             event_type=webhook_event_type,
             payload=payload,
         )
-

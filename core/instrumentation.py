@@ -4,6 +4,7 @@ OpenTelemetry instrumentation setup.
 This module configures OpenTelemetry for distributed tracing,
 metrics, and logging.
 """
+
 import logging
 import os
 
@@ -50,9 +51,7 @@ def setup_opentelemetry():
     trace.set_tracer_provider(trace_provider)
 
     # OTLP exporter for Tempo
-    otlp_endpoint = os.environ.get(
-        "OTEL_EXPORTER_OTLP_ENDPOINT", "http://tempo:4317"
-    )
+    otlp_endpoint = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "http://tempo:4317")
     otlp_exporter = OTLPSpanExporter(
         endpoint=otlp_endpoint,
         insecure=True,  # Use TLS in production
@@ -73,9 +72,7 @@ def setup_opentelemetry():
         start_http_server(prometheus_port)
         logger.info(f"Prometheus metrics server started on port {prometheus_port}")
     except OSError:
-        logger.warning(
-            f"Prometheus metrics server port {prometheus_port} already in use"
-        )
+        logger.warning(f"Prometheus metrics server port {prometheus_port} already in use")
 
     logger.info("OpenTelemetry instrumentation configured")
 
@@ -91,4 +88,3 @@ def get_tracer(name: str):
         Tracer instance
     """
     return trace.get_tracer(name)
-

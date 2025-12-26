@@ -3,6 +3,7 @@ ListLicensesByEmailHandler - US6.
 
 Handler for listing licenses by customer email.
 """
+
 from typing import List
 
 from activations.ports.activation_repository import ActivationRepository

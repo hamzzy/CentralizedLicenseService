@@ -171,9 +171,7 @@ class WebhookConfig(models.Model):
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    brand = models.ForeignKey(
-        Brand, on_delete=models.CASCADE, related_name="webhook_configs"
-    )
+    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name="webhook_configs")
     url = models.URLField(max_length=500, help_text="Webhook URL")
     secret = models.CharField(
         max_length=255,
@@ -184,12 +182,8 @@ class WebhookConfig(models.Model):
         help_text="List of event types to subscribe to",
     )
     is_active = models.BooleanField(default=True)
-    max_retries = models.IntegerField(
-        default=3, help_text="Maximum retry attempts"
-    )
-    timeout_seconds = models.IntegerField(
-        default=10, help_text="Request timeout in seconds"
-    )
+    max_retries = models.IntegerField(default=3, help_text="Maximum retry attempts")
+    timeout_seconds = models.IntegerField(default=10, help_text="Request timeout in seconds")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

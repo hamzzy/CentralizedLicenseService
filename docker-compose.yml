@@ -29,7 +29,7 @@ services:
       - db
       - redis
       - tempo
-    command: python3 /app/manage.py migrate --noinput && python3 /app/manage.py runserver 0.0.0.0:8000
+    command: sh -c "python3 /app/manage.py migrate --noinput && python3 /app/manage.py runserver 0.0.0.0:8000"
 
   db:
     image: postgres:15-alpine

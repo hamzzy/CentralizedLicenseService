@@ -3,6 +3,7 @@ Prometheus metrics for the license service.
 
 Custom metrics for business logic and performance monitoring.
 """
+
 from prometheus_client import Counter, Histogram, Gauge
 
 # HTTP metrics
@@ -90,4 +91,3 @@ errors_total = Counter(
     "Total errors",
     ["error_type", "endpoint"],
 )
-
