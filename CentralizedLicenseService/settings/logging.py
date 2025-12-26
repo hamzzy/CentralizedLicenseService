@@ -49,7 +49,7 @@ def get_logging_config(environment: str = "development") -> dict:
         "formatters": {
             "json": {
                 "()": CustomJsonFormatter,
-                "format": "%(asctime)s %(name)s %(levelname)s %(message)s %(pathname)s %(lineno)d",
+                "format": "%(asctime)s %(name)s %(levelname)s %(message)s %(pathname)s %(lineno)d %(funcName)s",
             },
             "verbose": {
                 "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
@@ -82,17 +82,22 @@ def get_logging_config(environment: str = "development") -> dict:
         "loggers": {
             "django": {
                 "handlers": ["console"],
-                "level": "INFO",
+                "level": "DEBUG",
                 "propagate": False,
             },
             "django.request": {
                 "handlers": ["console"],
-                "level": "WARNING",
+                "level": "INFO",
                 "propagate": False,
             },
             "django.db.backends": {
                 "handlers": ["console"],
-                "level": "WARNING",
+                "level": "INFO",
+                "propagate": False,
+            },
+            "django.server": {
+                "handlers": ["console"],
+                "level": "INFO",
                 "propagate": False,
             },
             "core": {

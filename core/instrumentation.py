@@ -95,15 +95,27 @@ def setup_opentelemetry():
     RedisInstrumentor().instrument()
 
     # Configure Prometheus metrics
+    # Note: Metrics are exposed via prometheus_client's default /metrics endpoint
+    # The metrics server is started separately if needed, but Django can serve /metrics
     prometheus_port = int(os.environ.get("PROMETHEUS_PORT", "9090"))
     try:
         # Start metrics server on all interfaces (0.0.0.0) so Prometheus can access it
+        import socket
+
         from prometheus_client import start_http_server
 
-        start_http_server(prometheus_port, addr="0.0.0.0")
-        logger.info(f"Prometheus metrics server started on 0.0.0.0:{prometheus_port}")
-    except OSError as e:
-        logger.warning(f"Prometheus metrics server port {prometheus_port} already in use: {e}")
+        # Check if port is already in use
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        result = sock.connect_ex(("0.0.0.0", prometheus_port))
+        sock.close()
+
+        if result != 0:  # Port is not in use
+            start_http_server(prometheus_port, addr="0.0.0.0")
+            logger.info(f"Prometheus metrics server started on 0.0.0.0:{prometheus_port}")
+        else:
+            logger.info(f"Prometheus metrics server already running on port {prometheus_port}")
+    except Exception as e:
+        logger.warning(f"Could not start Prometheus metrics server: {e}")
 
     logger.info("OpenTelemetry instrumentation configured")
 
