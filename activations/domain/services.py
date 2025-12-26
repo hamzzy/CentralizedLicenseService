@@ -124,13 +124,33 @@ class SeatManager:
         if not can_activate:
             raise ValueError(error)
 
-        # Create activation
-        activation = Activation.create(
-            license_id=license.id,
-            instance_identifier=instance_identifier,
-            instance_type=instance_type,
-            instance_metadata=instance_metadata,
+        # Check for existing activation (reuse if inactive)
+        existing = await activation_repository.find_by_license_and_instance(
+            license.id, instance_identifier
         )
+        if existing:
+            # If already active, should have been caught by can_activate, but double check
+            if existing.is_active:
+                raise ValueError("Instance already activated")
+
+            # Reactivate
+            activation = existing.reactivate()
+            # Update metadata if provided
+            if instance_metadata:
+                # Since Activation is frozen, reactivate returns new instance with updated timestamps
+                # We need to manually update metadata on that instance or create new one with metadata
+                # Easier: create new from existing params but with new metadata
+                from dataclasses import replace
+
+                activation = replace(activation, instance_metadata=instance_metadata)
+        else:
+            # Create new activation
+            activation = Activation.create(
+                license_id=license.id,
+                instance_identifier=instance_identifier,
+                instance_type=instance_type,
+                instance_metadata=instance_metadata,
+            )
 
         # Save activation
         return await activation_repository.save(activation)
@@ -142,13 +162,6 @@ class SeatManager:
     ) -> Activation:
         """
         Deactivate a seat (free a license seat).
-
-        Args:
-            activation: Activation entity to deactivate
-            repository: Activation repository
-
-        Returns:
-            Deactivated Activation entity
         """
         deactivated = activation.deactivate()
         return await repository.save(deactivated)

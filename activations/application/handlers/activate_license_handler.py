@@ -14,6 +14,7 @@ from activations.ports.activation_repository import ActivationRepository
 from brands.ports.product_repository import ProductRepository
 from core.domain.exceptions import InvalidLicenseKeyError, LicenseNotFoundError
 from core.infrastructure.events import event_bus
+from licenses.application.services.license_cache_service import LicenseCacheService
 from licenses.ports.license_key_repository import LicenseKeyRepository
 from licenses.ports.license_repository import LicenseRepository
 
@@ -89,6 +90,9 @@ class ActivateLicenseHandler:
                 instance_type=command.instance_type.value,
             )
         )
+
+        # Invalidate license status cache
+        await LicenseCacheService.invalidate_license_status(command.license_key)
 
         # Calculate remaining seats
         active_count = await SeatManager.count_active_seats(license.id, self.activation_repository)

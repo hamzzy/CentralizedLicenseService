@@ -48,7 +48,11 @@ class GetLicenseStatusHandler:
         # Try cache first
         cached_status = await LicenseCacheService.get_license_status(query.license_key)
         if cached_status:
+            with open("debug_cache.log", "a") as f:
+                f.write("DEBUG: Cache HIT\n")
             return cached_status
+        with open("debug_cache.log", "a") as f:
+            f.write("DEBUG: Cache MISS\n")
 
         # Find license key by key hash
         key_hash = hashlib.sha256(query.license_key.encode()).hexdigest()

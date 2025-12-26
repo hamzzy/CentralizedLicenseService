@@ -110,3 +110,22 @@ class Activation:
             deactivated_at=datetime.utcnow(),
             is_active=False,
         )
+
+    def reactivate(self) -> "Activation":
+        """
+        Create a new Activation instance with reactivated status.
+
+        Returns:
+            New Activation instance with active status
+        """
+        now = datetime.utcnow()
+        return Activation(
+            id=self.id,
+            license_id=self.license_id,
+            instance_identifier=self.instance_identifier,
+            instance_metadata=self.instance_metadata,
+            activated_at=now,  # Update activation time? Or keep original? Usually update.
+            last_checked_at=now,
+            deactivated_at=None,
+            is_active=True,
+        )

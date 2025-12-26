@@ -6,8 +6,8 @@ import uuid
 from datetime import timedelta
 
 import pytest
-from django.utils import timezone
 from django.test import override_settings
+from django.utils import timezone
 
 from activations.domain.activation import Activation
 from activations.infrastructure.repositories.django_activation_repository import (

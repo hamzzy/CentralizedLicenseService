@@ -50,14 +50,16 @@ class LicenseCacheService:
         """
         cache_key = LicenseCacheService._license_status_key(license_key)
         cached = await cache_adapter.get(cache_key)
-        if cached:
-            try:
-                # Deserialize from dict
-                return LicenseStatusDTO(**cached)
-            except Exception as e:
-                logger.warning(f"Error deserializing cached status: {e}")
-                return None
-        return None
+
+        if not cached:
+            return None
+
+        try:
+            # Deserialize from dict
+            return LicenseStatusDTO(**cached)
+        except Exception as e:
+            logger.warning(f"Error deserializing cached status: {e}")
+            return None
 
     @staticmethod
     async def set_license_status(
