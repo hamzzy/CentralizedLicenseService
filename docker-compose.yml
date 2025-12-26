@@ -146,9 +146,12 @@ services:
       - USE_RABBITMQ=true
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672//
     depends_on:
-      - db
-      - redis
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_started
+      redis:
+        condition: service_started
     command: celery -A CentralizedLicenseService worker --loglevel=info
 
 volumes:
