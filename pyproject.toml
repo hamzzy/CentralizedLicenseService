@@ -17,6 +17,7 @@ extend-exclude = '''
   | build
   | dist
 )/
+| migrations
 '''
 
 [tool.isort]
@@ -48,6 +49,11 @@ disable = [
 
 [tool.pylint.django]
 settings-module = "CentralizedLicenseService.settings"
+
+[tool.pylint."main"]
+ignore-paths = [
+    ".*/migrations/.*",
+]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "CentralizedLicenseService.settings.test"

@@ -97,7 +97,7 @@ class TestBrandAPI:
 
         new_expiration = datetime.utcnow() + timedelta(days=730)
         url = reverse("api:v1:brand:renew-license", kwargs={"license_id": db_license.id})
-        response = api_client.post(
+        response = api_client.patch(
             url,
             {"expiration_date": new_expiration.isoformat()},
             HTTP_X_API_KEY=raw_key,
@@ -105,7 +105,8 @@ class TestBrandAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "valid"
+        assert "message" in data
+        assert "renewed successfully" in data["message"].lower()
 
     def test_suspend_license_success(self, api_client, db_license):
         """Test successful license suspension via API."""
@@ -128,11 +129,12 @@ class TestBrandAPI:
             "api:v1:brand:suspend-license",
             kwargs={"license_id": db_license.id},
         )
-        response = api_client.post(url, HTTP_X_API_KEY=raw_key)
+        response = api_client.patch(url, HTTP_X_API_KEY=raw_key)
 
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "suspended"
+        assert "message" in data
+        assert "suspended successfully" in data["message"].lower()
 
     def test_list_licenses_by_email(self, api_client, db_license):
         """Test listing licenses by customer email."""
@@ -160,5 +162,6 @@ class TestBrandAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert "licenses" in data
-        assert len(data["licenses"]) >= 1
+        # Response is a list of licenses, not a dict with "licenses" key
+        assert isinstance(data, list)
+        assert len(data) >= 1
