@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
 
+from core.domain.exceptions import InvalidLicenseStatusError
 from core.domain.value_objects import LicenseStatus
 
 
@@ -103,7 +104,7 @@ class License:
             New License instance with updated expiration
         """
         if new_expiration < datetime.now(timezone.utc):
-            raise ValueError("Expiration date cannot be in the past")
+            raise InvalidLicenseStatusError("Expiration date cannot be in the past")
 
         new_status = LicenseStatus.VALID if self.status == LicenseStatus.EXPIRED else self.status
 
@@ -126,7 +127,7 @@ class License:
             New License instance with suspended status
         """
         if self.status == LicenseStatus.CANCELLED:
-            raise ValueError("Cannot suspend a cancelled license")
+            raise InvalidLicenseStatusError("Cannot suspend a cancelled license")
 
         return License(
             id=self.id,
@@ -147,7 +148,7 @@ class License:
             New License instance with valid status
         """
         if self.status != LicenseStatus.SUSPENDED:
-            raise ValueError("Can only resume a suspended license")
+            raise InvalidLicenseStatusError("Can only resume a suspended license")
 
         return License(
             id=self.id,

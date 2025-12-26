@@ -98,3 +98,9 @@ class InvalidInstanceIdentifierError(ActivationException):
     """Raised when an instance identifier is invalid."""
 
     pass
+
+
+class InvalidLicenseStatusError(LicenseException):
+    """Raised when a license operation is invalid for the current status."""
+
+    pass

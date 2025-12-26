@@ -178,3 +178,65 @@ class TestBrandAPI:
         # Response is a list of licenses, not a dict with "licenses" key
         assert isinstance(data, list)
         assert len(data) >= 1
+
+    def test_resume_license_invalid_state(self, api_client, db_license):
+        """Test resuming a license that is not suspended (should fail)."""
+        import hashlib
+        import secrets
+
+        from licenses.infrastructure.models import License
+
+        license_obj = License.objects.get(id=db_license.id)
+        # License is VALID by default in test fixture
+
+        brand = license_obj.license_key.brand
+        raw_key = secrets.token_urlsafe(32)
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        ApiKey.objects.create(
+            brand=brand,
+            key_prefix=raw_key[:8],
+            key_hash=key_hash,
+        )
+
+        url = reverse("brand:resume-license", kwargs={"license_id": db_license.id})
+        response = api_client.patch(
+            url,
+            HTTP_X_API_KEY=raw_key,
+            format="json",
+        )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert "error" in data
+        assert "Can only resume a suspended license" in data["error"]
+
+    def test_renew_license_past_date(self, api_client, db_license):
+        """Test renewing a license with a past date (should fail)."""
+        import hashlib
+        import secrets
+
+        from licenses.infrastructure.models import License
+
+        license_obj = License.objects.get(id=db_license.id)
+        brand = license_obj.license_key.brand
+        raw_key = secrets.token_urlsafe(32)
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        ApiKey.objects.create(
+            brand=brand,
+            key_prefix=raw_key[:8],
+            key_hash=key_hash,
+        )
+
+        past_date = timezone.now() - timedelta(days=1)
+        url = reverse("brand:renew-license", kwargs={"license_id": db_license.id})
+        response = api_client.patch(
+            url,
+            {"expiration_date": past_date.isoformat()},
+            HTTP_X_API_KEY=raw_key,
+            format="json",
+        )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert "error" in data
+        assert "Expiration date cannot be in the past" in data["error"]
