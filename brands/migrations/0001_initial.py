@@ -120,13 +120,7 @@ class Migration(migrations.Migration):
             model_name="brand",
             index=models.Index(fields=["prefix"], name="brands_prefix_92a708_idx"),
         ),
-        migrations.AddConstraint(
-            model_name="brand",
-            constraint=models.CheckConstraint(
-                check=models.Q(("prefix__length__gte", 2), ("prefix__length__lte", 10)),
-                name="prefix_length_valid",
-            ),
-        ),
+        # Note: CheckConstraint with length lookup removed - validation in clean() method
         migrations.AddField(
             model_name="apikey",
             name="brand",
