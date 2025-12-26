@@ -12,6 +12,9 @@ from licenses.application.dto.license_dto import LicenseDTO, LicenseStatusDTO
 from licenses.application.queries.get_license_status import (
     GetLicenseStatusQuery,
 )
+from licenses.application.services.license_cache_service import (
+    LicenseCacheService,
+)
 from licenses.ports.license_key_repository import LicenseKeyRepository
 from licenses.ports.license_repository import LicenseRepository
 
@@ -47,6 +50,13 @@ class GetLicenseStatusHandler:
         Raises:
             InvalidLicenseKeyError: If license key not found
         """
+        # Try cache first
+        cached_status = await LicenseCacheService.get_license_status(
+            query.license_key
+        )
+        if cached_status:
+            return cached_status
+
         # Find license key by key hash
         key_hash = hashlib.sha256(query.license_key.encode()).hexdigest()
         license_key = await self.license_key_repository.find_by_key_hash(
@@ -105,7 +115,7 @@ class GetLicenseStatusHandler:
             total_seats_used += seats_used
             total_seats_available += seats_remaining
 
-        return LicenseStatusDTO(
+        result = LicenseStatusDTO(
             license_key=query.license_key,
             status="valid" if overall_valid else "invalid",
             is_valid=overall_valid,
@@ -113,4 +123,11 @@ class GetLicenseStatusHandler:
             total_seats_used=total_seats_used,
             total_seats_available=total_seats_available,
         )
+
+        # Cache the result
+        await LicenseCacheService.set_license_status(
+            query.license_key, result
+        )
+
+        return result
 
