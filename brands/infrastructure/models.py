@@ -38,8 +38,12 @@ class Brand(models.Model):
             models.Index(fields=["slug"]),
             models.Index(fields=["prefix"]),
         ]
-        # Note: CheckConstraint with length lookup is not supported in all databases
-        # Validation is handled in clean() method instead
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(prefix__length__gte=2) & models.Q(prefix__length__lte=10),
+                name="prefix_length_valid",
+            ),
+        ]
 
     def clean(self):
         """Validate brand fields."""
