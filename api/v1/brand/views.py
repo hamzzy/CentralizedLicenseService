@@ -30,7 +30,6 @@ from api.v1.brand.serializers import (
 )
 from brands.infrastructure.repositories.django_brand_repository import DjangoBrandRepository
 from brands.infrastructure.repositories.django_product_repository import DjangoProductRepository
-from core.domain.exceptions import DomainException
 from core.instrumentation import Status, StatusCode, get_tracer
 from licenses.application.commands.cancel_license import CancelLicenseCommand
 from licenses.application.commands.provision_license import ProvisionLicenseCommand

@@ -7,7 +7,7 @@ and license keys for product-facing APIs.
 
 import hashlib
 import logging
-from typing import Callable, Optional
+from typing import Optional
 
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.deprecation import MiddlewareMixin
@@ -106,14 +106,15 @@ class APIKeyAuthenticationMiddleware(MiddlewareMixin):
         api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
 
         try:
+            # pylint: disable=no-member
             api_key_obj = ApiKey.objects.filter(key_hash=api_key_hash).first()
             if not api_key_obj:
-                logger.warning(f"Invalid API key attempted: {api_key[:8]}...")
+                logger.warning("Invalid API key attempted: %s...", api_key[:8])
                 return JsonResponse({"error": "Invalid API key"}, status=401)
 
             # Check if API key is valid (not expired)
             if not api_key_obj.is_valid():
-                logger.warning(f"Expired API key attempted: {api_key[:8]}...")
+                logger.warning("Expired API key attempted: %s...", api_key[:8])
                 return JsonResponse({"error": "API key expired"}, status=401)
 
             # Mark API key as used
@@ -124,8 +125,8 @@ class APIKeyAuthenticationMiddleware(MiddlewareMixin):
             request.api_key = api_key_obj  # type: ignore
             return None
 
-        except Exception as e:
-            logger.error(f"Error authenticating brand API: {e}", exc_info=True)
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.error("Error authenticating brand API: %s", e, exc_info=True)
             return JsonResponse({"error": "Authentication error"}, status=500)
 
     def _authenticate_product_api(self, request: HttpRequest) -> Optional[HttpResponse]:
@@ -148,7 +149,8 @@ class APIKeyAuthenticationMiddleware(MiddlewareMixin):
         if not license_key:
             return JsonResponse(
                 {
-                    "error": "Missing license key. Provide X-License-Key header or license_key query param."
+                    "error": "Missing license key. Provide X-License-Key header "
+                    "or license_key query param."
                 },
                 status=401,
             )
@@ -160,15 +162,16 @@ class APIKeyAuthenticationMiddleware(MiddlewareMixin):
         license_key_hash = hashlib.sha256(license_key.encode()).hexdigest()
 
         try:
+            # pylint: disable=no-member
             license_key_obj = LicenseKey.objects.filter(key_hash=license_key_hash).first()
             if not license_key_obj:
-                logger.warning(f"Invalid license key attempted: {license_key[:8]}...")
+                logger.warning("Invalid license key attempted: %s...", license_key[:8])
                 return JsonResponse({"error": "Invalid license key"}, status=401)
 
             # Store license key in request for use in views
             request.license_key = license_key_obj  # type: ignore
             return None
 
-        except Exception as e:
-            logger.error(f"Error authenticating product API: {e}", exc_info=True)
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.error("Error authenticating product API: %s", e, exc_info=True)
             return JsonResponse({"error": "Authentication error"}, status=500)

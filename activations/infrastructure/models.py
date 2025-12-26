@@ -47,7 +47,7 @@ class Activation(models.Model):
         """Validate activation fields."""
         from django.core.exceptions import ValidationError
 
-        if not self.instance_identifier or len(self.instance_identifier.strip()) == 0:
+        if not self.instance_identifier or len(str(self.instance_identifier).strip()) == 0:
             raise ValidationError("Instance identifier cannot be empty")
         if len(self.instance_identifier) > 500:
             raise ValidationError("Instance identifier too long")
@@ -68,4 +68,7 @@ class Activation(models.Model):
         self.save()
 
     def __str__(self):
-        return f"{self.license.license_key.key} @ " f"{self.instance_identifier}"
+        # Cast to str to help Pylint with member access on ForeignKey
+        license_obj = self.license
+        # pylint: disable=no-member
+        return f"{str(license_obj.license_key.key)} @ {self.instance_identifier}"

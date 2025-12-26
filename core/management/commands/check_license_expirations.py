@@ -5,7 +5,6 @@ This command should be run periodically (e.g., via cron or scheduled task).
 """
 
 import logging
-from datetime import datetime
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -36,15 +35,26 @@ class Command(BaseCommand):
 
         # Find licenses that are expired but still marked as valid
         now = timezone.now()
-        expired_licenses = LicenseModel.objects.filter(status="valid", expires_at__lt=now)
+        # pylint: disable=no-member
+        expired_licenses_queryset = LicenseModel.objects.filter(status="valid", expires_at__lt=now)
 
-        count = expired_licenses.count()
+        count = expired_licenses_queryset.count()
         self.stdout.write(f"Found {count} expired license(s)")
 
         if dry_run:
+            # pylint: disable=no-member
             self.stdout.write(self.style.WARNING("DRY RUN - No changes will be made"))
-            for license in expired_licenses[:10]:  # Show first 10
+            for license in expired_licenses_queryset[:10]:  # Show first 10
                 self.stdout.write(f"  - License {license.id} expired at {license.expires_at}")
+            return
+
+        # Convert queryset to list before entering async context
+        # This avoids issues with Django ORM in async functions
+        expired_licenses = list(expired_licenses_queryset)
+
+        if not expired_licenses:
+            # pylint: disable=no-member
+            self.stdout.write(self.style.SUCCESS("No expired licenses to update"))
             return
 
         # Mark licenses as expired
@@ -54,17 +64,20 @@ class Command(BaseCommand):
             updated = 0
             for license_model in expired_licenses:
                 try:
-                    # Convert to domain entity
+                    # pylint: disable=protected-access
+                    # Convert to domain entity (synchronous method)
                     license_entity = repository._to_domain(license_model)
                     # Mark as expired
                     expired_entity = license_entity.mark_expired()
                     # Save (async)
                     await repository.save(expired_entity)
                     updated += 1
-                    logger.info(f"Marked license {license_model.id} as expired")
-                except Exception as e:
+                    logger.info("Marked license %s as expired", license_model.id)
+                except Exception as e:  # pylint: disable=broad-exception-caught
                     logger.error(
-                        f"Error marking license {license_model.id} as expired: {e}",
+                        "Error marking license %s as expired: %s",
+                        license_model.id,
+                        e,
                         exc_info=True,
                     )
             return updated
@@ -72,5 +85,6 @@ class Command(BaseCommand):
         updated = asyncio.run(mark_expired())
 
         self.stdout.write(
+            # pylint: disable=no-member
             self.style.SUCCESS(f"Successfully marked {updated} license(s) as expired")
         )

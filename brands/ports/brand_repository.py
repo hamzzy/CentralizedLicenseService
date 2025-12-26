@@ -44,7 +44,6 @@ class BrandRepository(ABC):
         Returns:
             Brand entity or None if not found
         """
-        pass
 
     @abstractmethod
     async def find_by_slug(self, slug: str) -> Optional[Brand]:
@@ -57,7 +56,6 @@ class BrandRepository(ABC):
         Returns:
             Brand entity or None if not found
         """
-        pass
 
     @abstractmethod
     async def find_by_prefix(self, prefix: str) -> Optional[Brand]:
@@ -70,7 +68,6 @@ class BrandRepository(ABC):
         Returns:
             Brand entity or None if not found
         """
-        pass
 
     @abstractmethod
     async def exists(self, brand_id: uuid.UUID) -> bool:
@@ -83,7 +80,6 @@ class BrandRepository(ABC):
         Returns:
             True if brand exists, False otherwise
         """
-        pass
 
     @abstractmethod
     async def list_all(self) -> List[Brand]:
@@ -93,4 +89,3 @@ class BrandRepository(ABC):
         Returns:
             List of Brand entities
         """
-        pass

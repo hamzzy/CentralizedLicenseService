@@ -1,4 +1,4 @@
-b"""
+"""
 URL configuration for brand API endpoints.
 """
 

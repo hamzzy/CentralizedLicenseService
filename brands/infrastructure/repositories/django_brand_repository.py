@@ -45,7 +45,7 @@ class DjangoBrandRepository(BrandRepository):
             updated_at=model.updated_at,
         )
 
-    def _to_model(self, brand: Brand) -> BrandModel:
+    async def _to_model(self, brand: Brand) -> BrandModel:
         """
         Convert domain entity to Django model.
 
@@ -55,7 +55,8 @@ class DjangoBrandRepository(BrandRepository):
         Returns:
             Django Brand model
         """
-        model, _ = BrandModel.objects.get_or_create(
+        # pylint: disable=no-member
+        model, created = await sync_to_async(BrandModel.objects.get_or_create)(
             id=brand.id,
             defaults={
                 "name": brand.name,
@@ -66,15 +67,14 @@ class DjangoBrandRepository(BrandRepository):
             },
         )
         # Update if exists
-        if not _:
+        if not created:
             model.name = brand.name
             model.slug = str(brand.slug)
             model.prefix = brand.prefix
             model.updated_at = brand.updated_at
         return model
 
-    @sync_to_async
-    def save(self, brand: Brand) -> Brand:
+    async def save(self, brand: Brand) -> Brand:
         """
         Save a brand entity.
 
@@ -84,12 +84,11 @@ class DjangoBrandRepository(BrandRepository):
         Returns:
             Saved brand entity
         """
-        model = self._to_model(brand)
-        model.save()
+        model = await self._to_model(brand)
+        await sync_to_async(model.save)()
         return self._to_domain(model)
 
-    @sync_to_async
-    def find_by_id(self, brand_id: uuid.UUID) -> Optional[Brand]:
+    async def find_by_id(self, brand_id: uuid.UUID) -> Optional[Brand]:
         """
         Find a brand by ID.
 
@@ -100,13 +99,15 @@ class DjangoBrandRepository(BrandRepository):
             Brand entity or None if not found
         """
         try:
-            model = BrandModel.objects.get(id=brand_id)
+            # pylint: disable=no-member
+            model = await sync_to_async(BrandModel.objects.get)(id=brand_id)
             return self._to_domain(model)
-        except BrandModel.DoesNotExist:
+        except BrandModel.DoesNotExist:  # pylint: disable=no-member
+            return None
+        except Exception:  # pylint: disable=broad-exception-caught
             return None
 
-    @sync_to_async
-    def find_by_slug(self, slug: str) -> Optional[Brand]:
+    async def find_by_slug(self, slug: str) -> Optional[Brand]:
         """
         Find a brand by slug.
 
@@ -117,13 +118,15 @@ class DjangoBrandRepository(BrandRepository):
             Brand entity or None if not found
         """
         try:
-            model = BrandModel.objects.get(slug=slug)
+            # pylint: disable=no-member
+            model = await sync_to_async(BrandModel.objects.get)(slug=slug)
             return self._to_domain(model)
-        except BrandModel.DoesNotExist:
+        except BrandModel.DoesNotExist:  # pylint: disable=no-member
+            return None
+        except Exception:  # pylint: disable=broad-exception-caught
             return None
 
-    @sync_to_async
-    def find_by_prefix(self, prefix: str) -> Optional[Brand]:
+    async def find_by_prefix(self, prefix: str) -> Optional[Brand]:
         """
         Find a brand by prefix.
 
@@ -134,13 +137,15 @@ class DjangoBrandRepository(BrandRepository):
             Brand entity or None if not found
         """
         try:
-            model = BrandModel.objects.get(prefix=prefix.upper())
+            # pylint: disable=no-member
+            model = await sync_to_async(BrandModel.objects.get)(prefix=prefix.upper())
             return self._to_domain(model)
-        except BrandModel.DoesNotExist:
+        except BrandModel.DoesNotExist:  # pylint: disable=no-member
+            return None
+        except Exception:  # pylint: disable=broad-exception-caught
             return None
 
-    @sync_to_async
-    def exists(self, brand_id: uuid.UUID) -> bool:
+    async def exists(self, brand_id: uuid.UUID) -> bool:
         """
         Check if a brand exists.
 
@@ -150,15 +155,18 @@ class DjangoBrandRepository(BrandRepository):
         Returns:
             True if brand exists, False otherwise
         """
-        return BrandModel.objects.filter(id=brand_id).exists()
+        # pylint: disable=no-member
+        qs = BrandModel.objects.filter(id=brand_id)
+        return await sync_to_async(qs.exists)()
 
-    @sync_to_async
-    def list_all(self) -> List[Brand]:
+    async def list_all(self) -> List[Brand]:
         """
         List all brands.
 
         Returns:
             List of Brand entities
         """
-        models = BrandModel.objects.all()
+        # pylint: disable=no-member
+        qs = BrandModel.objects.all()
+        models = await sync_to_async(list)(qs)
         return [self._to_domain(model) for model in models]

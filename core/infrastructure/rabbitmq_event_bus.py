@@ -56,7 +56,7 @@ class RabbitMQEventBus(EventBus):
             self._handlers[event_type] = []
 
         self._handlers[event_type].append(handler)
-        logger.info(f"Subscribed handler {handler.__class__.__name__} to {event_type}")
+        logger.info("Subscribed handler %s to %s", handler.__class__.__name__, event_type)
 
     async def publish(self, event: DomainEvent):
         """
@@ -89,12 +89,13 @@ class RabbitMQEventBus(EventBus):
                     )
 
                 logger.info(
-                    f"Published event {event.__class__.__name__} "
-                    f"to RabbitMQ (routing_key={routing_key})"
+                    "Published event %s to RabbitMQ (routing_key=%s)",
+                    event.__class__.__name__,
+                    routing_key,
                 )
 
         except Exception as e:
-            logger.error(f"Failed to publish event to RabbitMQ: {e}", exc_info=True)
+            logger.error("Failed to publish event to RabbitMQ: %s", e, exc_info=True)
             raise
 
     def get_queue(self, queue_name: str) -> Queue:
@@ -123,14 +124,12 @@ class RabbitMQEventBus(EventBus):
         Args:
             queue_name: Queue name to consume from
         """
-        from core.tasks import process_event_from_rabbitmq
-
         queue = self.get_queue(queue_name)
 
         conn = self._get_connection()
         try:
             with conn.Consumer(queue, callbacks=[self._handle_message]) as consumer:
-                logger.info(f"Starting to consume events from queue: {queue_name}")
+                logger.info("Starting to consume events from queue: %s", queue_name)
                 while True:
                     conn.drain_events(timeout=1)
         finally:
@@ -147,13 +146,13 @@ class RabbitMQEventBus(EventBus):
             message: Kombu message object
         """
         try:
-            from core.tasks import process_event_from_rabbitmq
+            from CentralizedLicenseService.celery import app
 
-            # Dispatch to Celery task for async processing
-            process_event_from_rabbitmq.delay(body)
+            # Dispatch to Celery task for async processing using string name to avoid cyclic import
+            app.send_task("core.tasks.process_event_from_rabbitmq", args=[body])
 
             message.ack()
 
         except Exception as e:
-            logger.error(f"Failed to handle message: {e}", exc_info=True)
+            logger.error("Failed to handle message: %s", e, exc_info=True)
             message.reject(requeue=True)

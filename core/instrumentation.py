@@ -29,6 +29,10 @@ except ImportError:
         def start_as_current_span(self, name):
             class NoOpSpan:
                 def __enter__(self):
+                    """
+                    Returns:
+                        NoOpSpan instance
+                    """
                     return self
 
                 def __exit__(self, *args):
@@ -111,11 +115,11 @@ def setup_opentelemetry():
 
         if result != 0:  # Port is not in use
             start_http_server(prometheus_port, addr="0.0.0.0")
-            logger.info(f"Prometheus metrics server started on 0.0.0.0:{prometheus_port}")
+            logger.info("Prometheus metrics server started on 0.0.0.0:%s", prometheus_port)
         else:
-            logger.info(f"Prometheus metrics server already running on port {prometheus_port}")
-    except Exception as e:
-        logger.warning(f"Could not start Prometheus metrics server: {e}")
+            logger.info("Prometheus metrics server already running on port %s", prometheus_port)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.warning("Could not start Prometheus metrics server: %s", e)
 
     logger.info("OpenTelemetry instrumentation configured")
 
@@ -135,13 +139,13 @@ def get_tracer(name: str):
 
     try:
         return trace.get_tracer(name)
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         # Return a no-op tracer if OpenTelemetry fails to initialize
         return NoOpTracer()
 
 
-# Provide trace status constants that work with or without OpenTelemetry
 if OPENTELEMETRY_AVAILABLE:
+    # pylint: disable=import-error,ungrouped-imports
     from opentelemetry import trace as otel_trace
 
     Status = otel_trace.Status

@@ -30,30 +30,33 @@ use_parentheses = true
 ensure_newline_before_comments = true
 skip_glob = ["*/migrations/*", "*/venv/*", "*/.venv/*"]
 
+[tool.pylint.main]
+load-plugins = ["pylint_django"]
+django-settings-module = "CentralizedLicenseService.settings"
+ignore-paths = [
+    ".*/migrations/.*",
+]
+
 [tool.pylint.messages_control]
 disable = [
     "C0103",  # invalid-name (allow non-const names)
     "C0111",  # missing-docstring (not required for all modules)
     "R0903",  # too-few-public-methods (allow data classes)
     "R0913",  # too-many-arguments (sometimes necessary)
+    "W0622",  # redefined-builtin (often happens with 'license')
+    "C0415",  # import-outside-toplevel (often used for circular deps)
+    "R0801",  # duplicate-code (common in port interfaces)
+    "W0223",  # abstract-method (common in DRF serializers)
+    "R0912",  # too-many-branches (allowed for exception handlers)
 ]
+
+[tool.pylint.design]
+min-similarity-lines = 50
 
 [tool.pylint.format]
 max-line-length = 100
 
-[tool.pylint."messages control"]
-disable = [
-    "missing-docstring",
-    "too-few-public-methods",
-]
 
-[tool.pylint.django]
-django-settings-module = "CentralizedLicenseService.settings"
-
-[tool.pylint."main"]
-ignore-paths = [
-    ".*/migrations/.*",
-]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "CentralizedLicenseService.settings.test"

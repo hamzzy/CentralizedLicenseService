@@ -42,7 +42,9 @@ class AuditLogEventHandler(EventHandler):
             event: Domain event to log
         """
         logger.info(
-            f"Audit log: {event.event_type} - {event.aggregate_id}",
+            "Audit log: %s - %s",
+            event.event_type,
+            event.aggregate_id,
             extra={
                 "event_id": str(event.event_id),
                 "event_type": event.event_type,
@@ -67,23 +69,82 @@ class LicenseCacheInvalidationHandler(EventHandler):
         Args:
             event: Domain event
         """
-        # Invalidate cache for license lifecycle events
-        event_types = [
-            LicenseRenewed,
-            LicenseSuspended,
-            LicenseResumed,
-            LicenseCancelled,
-        ]
-        if LicenseActivated:
-            event_types.append(LicenseActivated)
-        if SeatDeactivated:
-            event_types.append(SeatDeactivated)
+        from licenses.application.services.license_cache_service import (
+            LicenseCacheService,
+        )
+        from licenses.infrastructure.repositories.django_license_repository import (  # noqa: E501
+            DjangoLicenseRepository,
+        )
+        from licenses.infrastructure.repositories.django_license_key_repository import (  # noqa: E501
+            DjangoLicenseKeyRepository,
+        )
 
-        if isinstance(event, tuple(event_types)):
-            # Get license key from event
-            # For now, log - full implementation would fetch license_key
-            logger.debug(f"Cache invalidation needed for event: {event.event_type}")
-            # TODO: Implement full cache invalidation based on event
+        license_repo = DjangoLicenseRepository()
+        license_key_repo = DjangoLicenseKeyRepository()
+
+        try:
+            license_key_str = None
+
+            # Handle events with license_key_id directly
+            if isinstance(event, LicenseKeyCreated):
+                license_key_obj = await license_key_repo.find_by_id(event.license_key_id)
+                if license_key_obj:
+                    license_key_str = license_key_obj.key
+
+            # Handle events with license_key_id via license_id
+            elif isinstance(event, LicenseProvisioned):
+                license_key_obj = await license_key_repo.find_by_id(event.license_key_id)
+                if license_key_obj:
+                    license_key_str = license_key_obj.key
+
+            # Handle events with only license_id (need to fetch license first)
+            elif isinstance(
+                event,
+                (LicenseRenewed, LicenseSuspended, LicenseResumed, LicenseCancelled),
+            ):
+                license_obj = await license_repo.find_by_id(event.license_id)
+                if license_obj:
+                    license_key_obj = await license_key_repo.find_by_id(license_obj.license_key_id)
+                    if license_key_obj:
+                        license_key_str = license_key_obj.key
+
+            # Handle activation events
+            elif LicenseActivated and isinstance(event, LicenseActivated):
+                license_obj = await license_repo.find_by_id(event.license_id)
+                if license_obj:
+                    license_key_obj = await license_key_repo.find_by_id(license_obj.license_key_id)
+                    if license_key_obj:
+                        license_key_str = license_key_obj.key
+
+            elif SeatDeactivated and isinstance(event, SeatDeactivated):
+                license_obj = await license_repo.find_by_id(event.license_id)
+                if license_obj:
+                    license_key_obj = await license_key_repo.find_by_id(license_obj.license_key_id)
+                    if license_key_obj:
+                        license_key_str = license_key_obj.key
+
+            # Invalidate cache if we have the license key
+            if license_key_str:
+                await LicenseCacheService.invalidate_license_status(license_key_str)
+                logger.info(
+                    "Cache invalidated for license key (event: %s)",
+                    event.event_type,
+                )
+            else:
+                logger.warning(
+                    "Could not find license key for cache invalidation "
+                    "(event: %s, aggregate_id: %s)",
+                    event.event_type,
+                    event.aggregate_id,
+                )
+
+        except Exception as e:
+            logger.error(
+                "Error invalidating cache for event %s: %s",
+                event.event_type,
+                e,
+                exc_info=True,
+            )
 
 
 class LicenseExpirationCheckHandler(EventHandler):
@@ -101,7 +162,7 @@ class LicenseExpirationCheckHandler(EventHandler):
             event: Domain event
         """
         # This would be called periodically, not on every event
-        logger.debug(f"Expiration check triggered by: {event.event_type}")
+        logger.debug("Expiration check triggered by: %s", event.event_type)
 
 
 # Register event handlers

@@ -5,7 +5,7 @@ This module provides custom exception handling for REST API responses.
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from django.http import Http404
 from rest_framework import status
@@ -49,135 +49,77 @@ class APIError(APIException):
 
 
 def custom_exception_handler(exc: Exception, context: Dict[str, Any]) -> Response:
-    """
-    Custom exception handler for REST API.
+    """Custom exception handler for REST API."""
+    trace_id = _get_trace_id(context)
 
-    This handler:
-    1. Converts domain exceptions to API responses
-    2. Adds error codes and trace IDs to headers
-    3. Logs errors appropriately
-    4. Returns consistent error format
-
-    Args:
-        exc: The exception that was raised
-        context: Context dictionary with request, view, etc.
-
-    Returns:
-        Response with error details
-    """
-    # Get trace ID from request if available (for Tempo integration)
-    request = context.get("request")
-    trace_id = None
-    if request:
-        # Try to get trace_id from request attributes (set by tracing middleware)
-        trace_id = getattr(request, "trace_id", None)
-        # Fallback to correlation_id if trace_id not available
-        if not trace_id:
-            trace_id = getattr(request, "correlation_id", None)
-
-    # Handle domain exceptions
     if isinstance(exc, DomainException):
-        status_code = status.HTTP_400_BAD_REQUEST
-
-        # Map specific exceptions to status codes
-        if isinstance(exc, (LicenseNotFoundError, BrandNotFoundError, ActivationNotFoundError)):
-            status_code = status.HTTP_404_NOT_FOUND
-        elif isinstance(exc, (InvalidLicenseKeyError, InvalidAPIKeyError)):
-            status_code = status.HTTP_401_UNAUTHORIZED
-
-        logger.warning(
-            f"Domain exception: {exc.code} - {exc.message}",
-            extra={"trace_id": trace_id},
-        )
-
-        # Error body never includes trace_id (always in header)
-        error_data = {
-            "code": exc.code,
-            "message": exc.message,
-        }
-
-        response = Response(
-            {"error": error_data},
-            status=status_code,
-        )
-
-        # Always add trace_id to headers
+        response = _handle_domain_exception(exc, trace_id)
         if trace_id:
             response["X-Trace-ID"] = trace_id
-
         return response
 
-    # Handle API exceptions
     if isinstance(exc, APIException):
         response = exception_handler(exc, context)
         if response:
-            error_data = {
-                "code": (
-                    exc.default_code.upper().replace("-", "_")
-                    if hasattr(exc, "default_code")
-                    else "API_ERROR"
-                ),
-                "message": response.data.get("detail", exc.default_detail),
+            code = (
+                exc.default_code.upper().replace("-", "_")
+                if hasattr(exc, "default_code")
+                else "API_ERROR"
+            )
+            response.data = {
+                "error": {"code": code, "message": response.data.get("detail", exc.default_detail)}
             }
-
-            response.data = {"error": error_data}
-
             if trace_id:
                 response["X-Trace-ID"] = trace_id
-
             return response
 
-    # Handle 404
     if isinstance(exc, Http404):
-        error_data = {
-            "code": "NOT_FOUND",
-            "message": "Resource not found",
-        }
-
         response = Response(
-            {"error": error_data},
+            {"error": {"code": "NOT_FOUND", "message": "Resource not found"}},
             status=status.HTTP_404_NOT_FOUND,
         )
-
         if trace_id:
             response["X-Trace-ID"] = trace_id
-
         return response
 
-    # Handle unexpected errors
-    logger.error(
-        f"Unexpected error: {exc}",
-        extra={"trace_id": trace_id},
-        exc_info=True,
-    )
+    return _handle_unexpected_exception(exc, context, trace_id)
 
-    # Use default DRF exception handler
+
+def _get_trace_id(context: Dict[str, Any]) -> Optional[str]:
+    """Extract trace ID from request context."""
+    request = context.get("request")
+    if not request:
+        return None
+    return getattr(request, "trace_id", getattr(request, "correlation_id", None))
+
+
+def _handle_domain_exception(exc: DomainException, trace_id: Optional[str]) -> Response:
+    """Handle domain-specific exceptions."""
+    status_code = status.HTTP_400_BAD_REQUEST
+    if isinstance(exc, (LicenseNotFoundError, BrandNotFoundError, ActivationNotFoundError)):
+        status_code = status.HTTP_404_NOT_FOUND
+    elif isinstance(exc, (InvalidLicenseKeyError, InvalidAPIKeyError)):
+        status_code = status.HTTP_401_UNAUTHORIZED
+
+    logger.warning("Domain exception: %s - %s", exc.code, exc.message, extra={"trace_id": trace_id})
+    return Response({"error": {"code": exc.code, "message": exc.message}}, status=status_code)
+
+
+def _handle_unexpected_exception(
+    exc: Exception, context: Dict[str, Any], trace_id: Optional[str]
+) -> Response:
+    """Handle unexpected or untracked exceptions."""
+    logger.error("Unexpected error: %s", exc, extra={"trace_id": trace_id}, exc_info=True)
     response = exception_handler(exc, context)
-    if response:
-        error_data = {
-            "code": "INTERNAL_ERROR",
-            "message": "An internal error occurred",
+    if not response:
+        response = Response(
+            {"error": {"code": "INTERNAL_ERROR", "message": "An internal error occurred"}},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    else:
+        response.data = {
+            "error": {"code": "INTERNAL_ERROR", "message": "An internal error occurred"}
         }
-
-        response.data = {"error": error_data}
-
-        if trace_id:
-            response["X-Trace-ID"] = trace_id
-
-        return response
-
-    # Fallback for unhandled exceptions
-    error_data = {
-        "code": "INTERNAL_ERROR",
-        "message": "An internal error occurred",
-    }
-
-    response = Response(
-        {"error": error_data},
-        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    )
-
     if trace_id:
         response["X-Trace-ID"] = trace_id
-
     return response

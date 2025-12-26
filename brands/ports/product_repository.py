@@ -44,7 +44,6 @@ class ProductRepository(ABC):
         Returns:
             Product entity or None if not found
         """
-        pass
 
     @abstractmethod
     async def find_by_slug(self, brand_id: uuid.UUID, slug: str) -> Optional[Product]:
@@ -58,7 +57,6 @@ class ProductRepository(ABC):
         Returns:
             Product entity or None if not found
         """
-        pass
 
     @abstractmethod
     async def list_by_brand(self, brand_id: uuid.UUID) -> List[Product]:
@@ -71,7 +69,6 @@ class ProductRepository(ABC):
         Returns:
             List of Product entities
         """
-        pass
 
     @abstractmethod
     async def exists(self, product_id: uuid.UUID) -> bool:
@@ -84,4 +81,3 @@ class ProductRepository(ABC):
         Returns:
             True if product exists, False otherwise
         """
-        pass

@@ -8,7 +8,6 @@ fit within a single entity.
 import uuid
 from typing import Optional
 
-from brands.domain.brand import Brand
 from brands.domain.product import Product
 
 

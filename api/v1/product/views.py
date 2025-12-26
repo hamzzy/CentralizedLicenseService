@@ -7,12 +7,9 @@ These endpoints are used by end-user products to:
 - Deactivate seats
 """
 
-import hashlib
 import uuid
 
 from asgiref.sync import async_to_sync
-from django.core.exceptions import ValidationError
-from django.db import IntegrityError
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.request import Request
@@ -26,7 +23,6 @@ from activations.application.handlers.deactivate_seat_handler import DeactivateS
 from activations.infrastructure.repositories.django_activation_repository import (
     DjangoActivationRepository,
 )
-from api.exceptions import APIError
 from api.v1.product.serializers import (
     ActivateLicenseRequestSerializer,
     ActivateLicenseResponseSerializer,
@@ -34,7 +30,6 @@ from api.v1.product.serializers import (
     LicenseStatusResponseSerializer,
 )
 from brands.infrastructure.repositories.django_product_repository import DjangoProductRepository
-from core.domain.exceptions import DomainException
 from core.domain.value_objects import InstanceType
 from core.instrumentation import Status, StatusCode, get_tracer
 from licenses.application.handlers.get_license_status_handler import GetLicenseStatusHandler
@@ -173,7 +168,10 @@ class GetLicenseStatusView(APIView):
                 type=str,
                 location=OpenApiParameter.HEADER,
                 required=False,
-                description="License key for product authentication (provide either this or license_key query parameter)",
+                description=(
+                    "License key for product authentication "
+                    "(provide either this or license_key query parameter)"
+                ),
             ),
             OpenApiParameter(
                 name="license_key",

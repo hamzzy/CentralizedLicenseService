@@ -50,251 +50,157 @@ class TracingMiddleware:
                 else:
                     sanitized[key] = str(value)[:500]  # Limit string length
             return sanitized
-        elif isinstance(data, list):
+        if isinstance(data, list):
             return [
                 self._sanitize_dict(item, max_depth - 1) for item in data[:10]
             ]  # Limit list size
-        else:
-            return str(data)[:500]
+        return str(data)[:500]
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         """Process request with tracing."""
-        # Check if tracer is available
-        # (NoOpTracer if OpenTelemetry not available)
+        # Check if tracer is available (NoOpTracer if OpenTelemetry not available)
         if not hasattr(tracer, "start_as_current_span") or not callable(
             getattr(tracer, "start_as_current_span", None)
         ):
-            # Skip tracing if OpenTelemetry not available
             return self.get_response(request)
 
         span_name = f"{request.method} {request.path}"
         with tracer.start_as_current_span(span_name) as span:
-            # Add request span attributes
-            span.set_attribute("http.method", request.method)
-            span.set_attribute("http.url", request.build_absolute_uri())
-            span.set_attribute("http.route", request.path)
-            user_agent = request.META.get("HTTP_USER_AGENT", "")
-            span.set_attribute("http.user_agent", user_agent)
-            remote_addr = request.META.get("REMOTE_ADDR", "")
-            span.set_attribute("http.remote_addr", remote_addr)
-            span.set_attribute("http.scheme", request.scheme)
+            self._set_request_attributes(span, request)
+            self._process_request_body(span, request)
 
-            # Add request headers (excluding sensitive ones)
-            if hasattr(request, "headers"):
-                content_type = request.headers.get("Content-Type", "")
-                if content_type:
-                    attr = "http.request.content_type"
-                    span.set_attribute(attr, content_type)
-
-                # Add API key presence (but not the value)
-                if "X-API-Key" in request.headers:
-                    span.set_attribute("http.request.has_api_key", True)
-                if "X-License-Key" in request.headers:
-                    has_license_key = True
-                    attr = "http.request.has_license_key"
-                    span.set_attribute(attr, has_license_key)
-
-            # Add query parameters (for GET requests)
-            if request.GET:
-                query_params = dict(request.GET)
-                # Limit query params to avoid too much data
-                for key, value in list(query_params.items())[:10]:
-                    # Skip sensitive params
-                    if key not in ["password", "secret", "token"]:
-                        param_value = value[0] if isinstance(value, list) else value
-                        attr_key = f"http.request.query.{key}"
-                        span.set_attribute(attr_key, str(param_value))
-
-            # Add request body (sanitized, limited size)
-            try:
-                if hasattr(request, "body") and request.body:
-                    body_str = request.body.decode("utf-8", errors="ignore")
-                    # Limit body size to avoid huge payloads
-                    max_body_size = 10000
-                    if len(body_str) > max_body_size:
-                        body_str = body_str[:max_body_size] + "... (truncated)"
-                    # Sanitize sensitive fields
-                    import json
-
-                    try:
-                        body_json = json.loads(body_str)
-                        sanitized = self._sanitize_dict(body_json)
-                        sanitized_json = json.dumps(sanitized)
-                        body_attr = "http.request.body"
-                        span.set_attribute(body_attr, sanitized_json[:5000])
-                        body_size_attr = "http.request.body_size"
-                        span.set_attribute(body_size_attr, len(body_str))
-                    except (json.JSONDecodeError, ValueError):
-                        # Not JSON, just store first 1000 chars
-                        body_attr = "http.request.body"
-                        span.set_attribute(body_attr, body_str[:1000])
-                        body_size_attr = "http.request.body_size"
-                        span.set_attribute(body_size_attr, len(body_str))
-            except Exception:
-                # Ignore errors reading body
-                pass
-
-            # Add tenant context if available
-            tenant_id = getattr(request, "tenant_id", None)
-            if tenant_id:
-                tenant_attr = "tenant.id"
-                span.set_attribute(tenant_attr, str(tenant_id))
-
-            # Add brand context if available
-            brand = getattr(request, "brand", None)
-            if brand:
-                span.set_attribute("brand.id", str(brand.id))
-                span.set_attribute("brand.name", brand.name)
-
-            # Add license key context if available
-            license_key = getattr(request, "license_key", None)
-            if license_key:
-                key_id_attr = "license_key.id"
-                span.set_attribute(key_id_attr, str(license_key.id))
-                email = license_key.customer_email
-                email_attr = "license_key.customer_email"
-                span.set_attribute(email_attr, email)
-
-            # Store trace_id on request for error responses (Tempo integration)
+            # Store trace_id on request for error responses
             if hasattr(span, "get_span_context") and callable(span.get_span_context):
                 trace_context = span.get_span_context()
                 if trace_context and hasattr(trace_context, "trace_id"):
-                    trace_id_hex = format(trace_context.trace_id, "032x")
-                    request.trace_id = trace_id_hex
+                    request.trace_id = format(trace_context.trace_id, "032x")
 
-            # Process request
             start_time = time.time()
             try:
                 response = self.get_response(request)
-                duration = time.time() - start_time
-
-                # Add response span attributes
-                span.set_attribute("http.status_code", response.status_code)
-                response_size = len(response.content)
-                span.set_attribute("http.response_size", response_size)
-                duration_ms = round(duration * 1000, 2)
-                span.set_attribute("http.duration_ms", duration_ms)
-
-                # Add response content type
-                content_type = response.get("Content-Type", "")
-                if content_type:
-                    attr = "http.response.content_type"
-                    span.set_attribute(attr, content_type)
-
-                # Add response body (for all responses, more detail for errors)
-                try:
-                    if hasattr(response, "content") and response.content:
-                        response_body = response.content.decode("utf-8", errors="ignore")
-                        # For successful responses, limit size more
-                        max_size = 10000 if response.status_code >= 400 else 2000
-                        if len(response_body) > max_size:
-                            truncated = "... (truncated)"
-                            response_body = response_body[:max_size] + truncated
-
-                        # Sanitize response body
-                        import json
-
-                        try:
-                            body_json = json.loads(response_body)
-                            sanitized = self._sanitize_dict(body_json)
-                            sanitized_str = json.dumps(sanitized)[:max_size]
-                            body_attr = "http.response.body"
-                            span.set_attribute(body_attr, sanitized_str)
-
-                            # Extract error details if JSON and error response
-                            is_error = response.status_code >= 400
-                            if is_error and isinstance(body_json, dict):
-                                if "error" in body_json:
-                                    error_info = body_json["error"]
-                                    if isinstance(error_info, dict):
-                                        code = error_info.get("code", "")
-                                        error_code = str(code)
-                                        code_attr = "error.code"
-                                        span.set_attribute(code_attr, error_code)
-                                        msg = error_info.get("message", "")
-                                        error_msg = str(msg)
-                                        msg_attr = "error.message"
-                                        span.set_attribute(msg_attr, error_msg)
-                                        # Add error type if available
-                                        if "type" in error_info:
-                                            err_type = error_info.get("type")
-                                            error_type = str(err_type)
-                                            span.set_attribute("error.type", error_type)
-                        except (json.JSONDecodeError, ValueError):
-                            # Not JSON, just store sanitized string
-                            body_attr = "http.response.body"
-                            span.set_attribute(body_attr, response_body[:max_size])
-                except Exception:
-                    pass
-
-                # Add request status information
-                request_status = "success" if response.status_code < 400 else "error"
-                if response.status_code >= 500:
-                    request_status = "server_error"
-                elif response.status_code >= 400:
-                    request_status = "client_error"
-
-                span.set_attribute("request.status", request_status)
-                span.set_attribute("request.status_code", response.status_code)
-
-                # Add correlation ID if available (for traceability)
-                correlation_id = getattr(request, "correlation_id", None)
-                if correlation_id:
-                    span.set_attribute("correlation.id", str(correlation_id))
-
-                # Set span status based on HTTP status code
-                from core.instrumentation import Status, StatusCode
-
-                if response.status_code >= 500:
-                    status_code = response.status_code
-                    error_msg = f"HTTP {status_code} - Server Error"
-                    span.set_status(Status(StatusCode.ERROR, error_msg))
-                elif response.status_code >= 400:
-                    status_code = response.status_code
-                    error_msg = f"HTTP {status_code} - Client Error"
-                    span.set_status(Status(StatusCode.ERROR, error_msg))
-                else:
-                    span.set_status(Status(StatusCode.OK))
-
+                self._set_response_attributes(span, response, time.time() - start_time)
                 return response
             except Exception as e:
-                duration = time.time() - start_time
-                duration_ms = round(duration * 1000, 2)
-                span.set_attribute("http.duration_ms", duration_ms)
-                span.set_attribute("error", True)
-                span.set_attribute("error.type", type(e).__name__)
-                span.set_attribute("error.message", str(e))
-                span.set_attribute("request.status", "exception")
-                span.set_attribute("request.status_code", 500)
+                self._handle_exception(span, request, e, time.time() - start_time)
+                raise
 
-                # Add exception details with stack trace
-                import traceback
+    def _set_request_attributes(self, span, request: HttpRequest):
+        """Set attributes from the request."""
+        span.set_attribute("http.method", request.method)
+        span.set_attribute("http.url", request.build_absolute_uri())
+        span.set_attribute("http.route", request.path)
+        span.set_attribute("http.user_agent", request.META.get("HTTP_USER_AGENT", ""))
+        span.set_attribute("http.remote_addr", request.META.get("REMOTE_ADDR", ""))
+        span.set_attribute("http.scheme", request.scheme)
+
+        if hasattr(request, "headers"):
+            if "Content-Type" in request.headers:
+                span.set_attribute("http.request.content_type", request.headers["Content-Type"])
+            if "X-API-Key" in request.headers:
+                span.set_attribute("http.request.has_api_key", True)
+            if "X-License-Key" in request.headers:
+                span.set_attribute("http.request.has_license_key", True)
+
+        if request.GET:
+            for key, value in list(request.GET.items())[:10]:
+                if key.lower() not in ["password", "secret", "token", "key", "api_key"]:
+                    val = value[0] if isinstance(value, list) else value
+                    span.set_attribute(f"http.request.query.{key}", str(val))
+
+        # Add context if available
+        for attr in ["tenant_id", "brand", "license_key"]:
+            val = getattr(request, attr, None)
+            if val:
+                if attr == "brand":
+                    span.set_attribute("brand.id", str(val.id))
+                    span.set_attribute("brand.name", str(val.name))
+                elif attr == "license_key":
+                    span.set_attribute("license_key.id", str(val.id))
+                    span.set_attribute("license_key.customer_email", str(val.customer_email))
+                else:
+                    span.set_attribute(f"{attr.replace('_', '.')}", str(val))
+
+    def _process_request_body(self, span, request: HttpRequest):
+        """Process and sanitize request body."""
+        try:
+            if hasattr(request, "body") and request.body:
+                import json
+
+                body_str = request.body.decode("utf-8", errors="ignore")
+                span.set_attribute("http.request.body_size", len(body_str))
+
+                if len(body_str) > 10000:
+                    body_str = body_str[:10000] + "... (truncated)"
 
                 try:
-                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-                    # Limit stack trace size
-                    if len(tb_str) > 10000:
-                        tb_str = tb_str[:10000] + "... (truncated)"
-                    span.set_attribute("error.stack_trace", tb_str)
+                    body_json = json.loads(body_str)
+                    sanitized = self._sanitize_dict(body_json)
+                    span.set_attribute("http.request.body", json.dumps(sanitized)[:5000])
+                except (json.JSONDecodeError, ValueError):
+                    span.set_attribute("http.request.body", body_str[:1000])
+        except Exception:
+            pass
 
-                    # Add exception attributes if available
-                    if hasattr(e, "code"):
-                        span.set_attribute("error.code", str(e.code))
-                    if hasattr(e, "message"):
-                        span.set_attribute("error.message", str(e.message))
-                    if hasattr(e, "status_code"):
-                        status_code = str(e.status_code)
-                        span.set_attribute("error.status_code", status_code)
+    def _set_response_attributes(self, span, response, duration: float):
+        """Set attributes from the response."""
+        span.set_attribute("http.status_code", response.status_code)
+        span.set_attribute("http.duration_ms", round(duration * 1000, 2))
+        if hasattr(response, "content") and response.content:
+            span.set_attribute("http.response_size", len(response.content))
+            self._process_response_body(span, response)
 
-                    # Add request context for debugging
-                    span.set_attribute("error.request_method", request.method)
-                    span.set_attribute("error.request_path", request.path)
-                except Exception:
-                    pass
+        # Set span status
+        from core.instrumentation import Status, StatusCode
 
-                from core.instrumentation import Status, StatusCode
+        if response.status_code >= 400:
+            span.set_status(Status(StatusCode.ERROR, f"HTTP {response.status_code}"))
+        else:
+            span.set_status(Status(StatusCode.OK))
 
-                error_type = type(e).__name__
-                error_description = f"{error_type}: {str(e)}"
-                span.set_status(Status(StatusCode.ERROR, error_description))
-                raise
+    def _process_response_body(self, span, response):
+        """Process and sanitize response body."""
+        try:
+            import json
+
+            content_type = response.get("Content-Type", "")
+            if content_type:
+                span.set_attribute("http.response.content_type", content_type)
+
+            response_body = response.content.decode("utf-8", errors="ignore")
+            max_size = 10000 if response.status_code >= 400 else 2000
+            try:
+                body_json = json.loads(response_body)
+                sanitized = self._sanitize_dict(body_json)
+                span.set_attribute("http.response.body", json.dumps(sanitized)[:max_size])
+                self._extract_error_details(span, response, body_json)
+            except (json.JSONDecodeError, ValueError):
+                span.set_attribute("http.response.body", response_body[:max_size])
+        except Exception:  # pylint: disable=broad-exception-caught
+            pass
+
+    def _extract_error_details(self, span, response, body_json):
+        """Extract error details from response JSON."""
+        if response.status_code >= 400 and isinstance(body_json, dict):
+            error_info = body_json.get("error", {})
+            if isinstance(error_info, dict):
+                for key in ["code", "message", "type"]:
+                    if key in error_info:
+                        span.set_attribute(f"error.{key}", str(error_info[key]))
+
+    def _handle_exception(self, span, _request, e: Exception, duration: float):
+        """Handle exception and update span."""
+        import traceback
+        from core.instrumentation import Status, StatusCode
+
+        span.set_attribute("http.duration_ms", round(duration * 1000, 2))
+        span.set_attribute("error", True)
+        span.set_attribute("error.type", type(e).__name__)
+        span.set_attribute("error.message", str(e))
+
+        try:
+            tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            span.set_attribute("error.stack_trace", tb_str[:10000])
+        except Exception:  # pylint: disable=broad-exception-caught
+            pass
+
+        span.set_status(Status(StatusCode.ERROR, f"{type(e).__name__}: {str(e)}"))

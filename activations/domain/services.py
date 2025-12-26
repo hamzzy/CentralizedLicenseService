@@ -80,13 +80,12 @@ class SeatManager:
         """
         # Check if license is valid
         if not license.is_valid():
-            if license.status.value == "expired":
-                return False, "License has expired"
-            if license.status.value == "suspended":
-                return False, "License is suspended"
-            if license.status.value == "cancelled":
-                return False, "License is cancelled"
-            return False, "License is not valid"
+            status_error_map = {
+                "expired": "License has expired",
+                "suspended": "License is suspended",
+                "cancelled": "License is cancelled",
+            }
+            return False, status_error_map.get(license.status.value, "License is not valid")
 
         # Check if instance is already activated
         existing = await repository.find_by_license_and_instance(license.id, instance_identifier)
@@ -107,7 +106,7 @@ class SeatManager:
         instance_type: "InstanceType",  # noqa: F821
         instance_metadata: Optional[dict] = None,
         activation_repository: ActivationRepository = None,
-        license_repository: LicenseRepository = None,
+        _license_repository: LicenseRepository = None,
     ) -> Activation:
         """
         Activate a license for an instance.
@@ -156,8 +155,9 @@ class SeatManager:
             activation = existing.reactivate()
             # Update metadata if provided
             if instance_metadata:
-                # Since Activation is frozen, reactivate returns new instance with updated timestamps
-                # We need to manually update metadata on that instance or create new one with metadata
+                # Since Activation is frozen, reactivate returns new instance
+                # with updated timestamps. We need to manually update metadata
+                # on that instance or create new one with metadata.
                 # Easier: create new from existing params but with new metadata
                 from dataclasses import replace
 

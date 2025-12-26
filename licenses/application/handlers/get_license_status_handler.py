@@ -5,6 +5,7 @@ Handler for getting license status query.
 """
 
 import hashlib
+import logging
 
 from activations.ports.activation_repository import ActivationRepository
 from brands.ports.product_repository import ProductRepository
@@ -14,6 +15,8 @@ from licenses.application.queries.get_license_status import GetLicenseStatusQuer
 from licenses.application.services.license_cache_service import LicenseCacheService
 from licenses.ports.license_key_repository import LicenseKeyRepository
 from licenses.ports.license_repository import LicenseRepository
+
+logger = logging.getLogger(__name__)
 
 
 class GetLicenseStatusHandler:
@@ -48,11 +51,9 @@ class GetLicenseStatusHandler:
         # Try cache first
         cached_status = await LicenseCacheService.get_license_status(query.license_key)
         if cached_status:
-            with open("debug_cache.log", "a") as f:
-                f.write("DEBUG: Cache HIT\n")
+            logger.debug("License status cache HIT for %s", query.license_key)
             return cached_status
-        with open("debug_cache.log", "a") as f:
-            f.write("DEBUG: Cache MISS\n")
+        logger.debug("License status cache MISS for %s", query.license_key)
 
         # Find license key by key hash
         key_hash = hashlib.sha256(query.license_key.encode()).hexdigest()
@@ -65,24 +66,39 @@ class GetLicenseStatusHandler:
         licenses = await self.license_repository.find_by_license_key(license_key.id)
 
         # Build license DTOs with seat information
+        license_results = await self._build_license_dtos(licenses)
+
+        result = LicenseStatusDTO(
+            license_key=query.license_key,
+            status="valid" if license_results["overall_valid"] else "invalid",
+            is_valid=license_results["overall_valid"],
+            is_activated=license_results["total_seats_used"] > 0,
+            licenses=license_results["dtos"],
+            total_seats_used=license_results["total_seats_used"],
+            total_seats_available=license_results["total_seats_available"],
+        )
+
+        # Cache the result
+        await LicenseCacheService.set_license_status(query.license_key, result)
+
+        return result
+
+    async def _build_license_dtos(self, licenses):
+        """Helper to build license DTOs and aggregate information."""
         license_dtos = []
         total_seats_used = 0
         total_seats_available = 0
         overall_valid = False
 
         for license in licenses:
-            # Count active seats
             active_activations = await self.activation_repository.find_active_by_license(license.id)
             seats_used = len(active_activations)
             seats_remaining = max(0, license.seat_limit - seats_used)
 
-            # Get product name
             product = await self.product_repository.find_by_id(license.product_id)
             product_name = product.name if product else "Unknown"
 
-            # Check if license is valid
-            is_valid = license.is_valid()
-            if is_valid:
+            if license.is_valid():
                 overall_valid = True
 
             license_dtos.append(
@@ -98,21 +114,12 @@ class GetLicenseStatusHandler:
                     created_at=license.created_at,
                 )
             )
-
             total_seats_used += seats_used
             total_seats_available += seats_remaining
 
-        result = LicenseStatusDTO(
-            license_key=query.license_key,
-            status="valid" if overall_valid else "invalid",
-            is_valid=overall_valid,
-            is_activated=total_seats_used > 0,  # License is active if any seats are used
-            licenses=license_dtos,
-            total_seats_used=total_seats_used,
-            total_seats_available=total_seats_available,
-        )
-
-        # Cache the result
-        await LicenseCacheService.set_license_status(query.license_key, result)
-
-        return result
+        return {
+            "dtos": license_dtos,
+            "total_seats_used": total_seats_used,
+            "total_seats_available": total_seats_available,
+            "overall_valid": overall_valid,
+        }

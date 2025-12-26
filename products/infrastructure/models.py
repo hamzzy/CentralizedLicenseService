@@ -32,6 +32,7 @@ class Product(models.Model):
         """Validate product fields."""
         from django.core.exceptions import ValidationError
 
+        # pylint: disable=no-member
         if not self.brand_id:
             raise ValidationError("Brand is required")
         if not self.slug:

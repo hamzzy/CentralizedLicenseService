@@ -45,13 +45,14 @@ class CentralizedLicenseServiceConfig(AppConfig):
                 logger.info("Setting up observability...")
                 self.setup_observability()
                 self.register_event_handlers()
+                # pylint: disable=attribute-defined-outside-init
                 self._initialized = True
                 logger.info("Observability setup complete")
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 import logging
 
                 logger = logging.getLogger(__name__)
-                logger.error(f"Error in AppConfig.ready(): {e}", exc_info=True)
+                logger.error("Error in AppConfig.ready(): %s", e, exc_info=True)
                 # Don't raise - allow app to start even if setup fails
 
     def setup_observability(self):
@@ -60,11 +61,11 @@ class CentralizedLicenseServiceConfig(AppConfig):
             from core.instrumentation import setup_opentelemetry
 
             setup_opentelemetry()
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             import logging
 
             logger = logging.getLogger(__name__)
-            logger.warning(f"Failed to setup OpenTelemetry: {e}")
+            logger.warning("Failed to setup OpenTelemetry: %s", e)
 
     def register_event_handlers(self):
         """Register event handlers after apps are ready."""
@@ -72,8 +73,8 @@ class CentralizedLicenseServiceConfig(AppConfig):
             from core.infrastructure.event_handlers import register_event_handlers as register
 
             register()
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             import logging
 
             logger = logging.getLogger(__name__)
-            logger.warning(f"Failed to register event handlers: {e}")
+            logger.warning("Failed to register event handlers: %s", e)

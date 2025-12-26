@@ -39,7 +39,7 @@ class InMemoryEventBus(EventBus):
         if event_type not in self._handlers:
             self._handlers[event_type] = []
         self._handlers[event_type].append(handler)
-        logger.debug(f"Subscribed {handler.__class__.__name__} to {event_type.__name__}")
+        logger.debug("Subscribed %s to %s", handler.__class__.__name__, event_type.__name__)
 
     async def publish(self, event: DomainEvent) -> None:
         """
@@ -52,10 +52,10 @@ class InMemoryEventBus(EventBus):
         handlers = self._handlers.get(event_type, [])
 
         if not handlers:
-            logger.debug(f"No handlers registered for {event_type.__name__}")
+            logger.debug("No handlers registered for %s", event_type.__name__)
             return
 
-        logger.info(f"Publishing {event_type.__name__} to {len(handlers)} handler(s)")
+        logger.info("Publishing %s to %d handler(s)", event_type.__name__, len(handlers))
 
         # Process handlers concurrently
         tasks = [self._handle_event(handler, event) for handler in handlers]
@@ -72,11 +72,14 @@ class InMemoryEventBus(EventBus):
         try:
             await handler.handle(event)
             logger.debug(
-                f"Successfully handled {event.event_type} with {handler.__class__.__name__}"
+                "Successfully handled %s with %s", event.event_type, handler.__class__.__name__
             )
         except Exception as e:
             logger.error(
-                f"Error handling {event.event_type} with {handler.__class__.__name__}: {e}",
+                "Error handling %s with %s: %s",
+                event.event_type,
+                handler.__class__.__name__,
+                e,
                 exc_info=True,
             )
             # In production, you might want to retry or send to dead letter queue

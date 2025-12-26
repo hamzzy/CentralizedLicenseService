@@ -2,6 +2,7 @@
 Pytest configuration and shared fixtures.
 """
 
+import asyncio
 import uuid
 from datetime import timedelta
 
@@ -59,7 +60,6 @@ def activation_repository():
 @pytest.fixture
 def sample_brand():
     """Fixture for a sample Brand entity."""
-    import uuid
 
     # Use unique values to avoid conflicts
     unique_id = str(uuid.uuid4())[:8]
@@ -115,8 +115,6 @@ def sample_activation(sample_license):
 @pytest.fixture
 def db_brand(db, brand_repository):
     """Fixture for a Brand saved in database."""
-    import asyncio
-    import uuid
 
     async def save_brand():
         # Create unique brand for each test to avoid conflicts
@@ -135,7 +133,6 @@ def db_brand(db, brand_repository):
 @pytest.fixture
 def db_product(db, db_brand, sample_product, product_repository):
     """Fixture for a Product saved in database."""
-    import asyncio
 
     async def save_product():
         product = Product.create(
@@ -151,7 +148,6 @@ def db_product(db, db_brand, sample_product, product_repository):
 @pytest.fixture
 def db_license_key(db, db_brand, license_key_repository):
     """Fixture for a LicenseKey saved in database."""
-    import asyncio
 
     async def save_key():
         key = LicenseKey.create(
@@ -167,7 +163,6 @@ def db_license_key(db, db_brand, license_key_repository):
 @pytest.fixture
 def db_license(db, db_license_key, db_product, license_repository):
     """Fixture for a License saved in database."""
-    import asyncio
 
     async def save_license():
         expires_at = timezone.now() + timedelta(days=365)

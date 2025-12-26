@@ -2,10 +2,6 @@
 Serializers for Brand API endpoints.
 """
 
-import uuid
-from datetime import datetime
-from typing import List, Optional
-
 from rest_framework import serializers
 
 
@@ -38,8 +34,6 @@ class SuspendLicenseRequestSerializer(serializers.Serializer):
 
 class ResumeLicenseRequestSerializer(serializers.Serializer):
     """Serializer for resume license request - US2."""
-
-    pass  # No additional fields needed
 
 
 class CancelLicenseRequestSerializer(serializers.Serializer):

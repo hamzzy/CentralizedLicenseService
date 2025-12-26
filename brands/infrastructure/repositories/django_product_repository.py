@@ -45,7 +45,7 @@ class DjangoProductRepository(ProductRepository):
             updated_at=model.updated_at,
         )
 
-    def _to_model(self, product: Product) -> ProductModel:
+    async def _to_model(self, product: Product) -> ProductModel:
         """
         Convert domain entity to Django model.
 
@@ -55,7 +55,8 @@ class DjangoProductRepository(ProductRepository):
         Returns:
             Django Product model
         """
-        model, created = ProductModel.objects.get_or_create(
+        # pylint: disable=no-member
+        model, created = await sync_to_async(ProductModel.objects.get_or_create)(
             id=product.id,
             defaults={
                 "brand_id": product.brand_id,
@@ -72,8 +73,7 @@ class DjangoProductRepository(ProductRepository):
             model.updated_at = product.updated_at
         return model
 
-    @sync_to_async
-    def save(self, product: Product) -> Product:
+    async def save(self, product: Product) -> Product:
         """
         Save a product entity.
 
@@ -83,12 +83,11 @@ class DjangoProductRepository(ProductRepository):
         Returns:
             Saved product entity
         """
-        model = self._to_model(product)
-        model.save()
+        model = await self._to_model(product)
+        await sync_to_async(model.save)()
         return self._to_domain(model)
 
-    @sync_to_async
-    def find_by_id(self, product_id: uuid.UUID) -> Optional[Product]:
+    async def find_by_id(self, product_id: uuid.UUID) -> Optional[Product]:
         """
         Find a product by ID.
 
@@ -99,13 +98,15 @@ class DjangoProductRepository(ProductRepository):
             Product entity or None if not found
         """
         try:
-            model = ProductModel.objects.get(id=product_id)
+            # pylint: disable=no-member
+            model = await sync_to_async(ProductModel.objects.get)(id=product_id)
             return self._to_domain(model)
-        except ProductModel.DoesNotExist:
+        except ProductModel.DoesNotExist:  # pylint: disable=no-member
+            return None
+        except Exception:  # pylint: disable=broad-exception-caught
             return None
 
-    @sync_to_async
-    def find_by_slug(self, brand_id: uuid.UUID, slug: str) -> Optional[Product]:
+    async def find_by_slug(self, brand_id: uuid.UUID, slug: str) -> Optional[Product]:
         """
         Find a product by brand and slug.
 
@@ -117,13 +118,15 @@ class DjangoProductRepository(ProductRepository):
             Product entity or None if not found
         """
         try:
-            model = ProductModel.objects.get(brand_id=brand_id, slug=slug)
+            # pylint: disable=no-member
+            model = await sync_to_async(ProductModel.objects.get)(brand_id=brand_id, slug=slug)
             return self._to_domain(model)
-        except ProductModel.DoesNotExist:
+        except ProductModel.DoesNotExist:  # pylint: disable=no-member
+            return None
+        except Exception:  # pylint: disable=broad-exception-caught
             return None
 
-    @sync_to_async
-    def list_by_brand(self, brand_id: uuid.UUID) -> List[Product]:
+    async def list_by_brand(self, brand_id: uuid.UUID) -> List[Product]:
         """
         List all products for a brand.
 
@@ -133,11 +136,12 @@ class DjangoProductRepository(ProductRepository):
         Returns:
             List of Product entities
         """
-        models = ProductModel.objects.filter(brand_id=brand_id)
+        # pylint: disable=no-member
+        qs = ProductModel.objects.filter(brand_id=brand_id)
+        models = await sync_to_async(list)(qs)
         return [self._to_domain(model) for model in models]
 
-    @sync_to_async
-    def exists(self, product_id: uuid.UUID) -> bool:
+    async def exists(self, product_id: uuid.UUID) -> bool:
         """
         Check if a product exists.
 
@@ -147,4 +151,6 @@ class DjangoProductRepository(ProductRepository):
         Returns:
             True if product exists, False otherwise
         """
-        return ProductModel.objects.filter(id=product_id).exists()
+        # pylint: disable=no-member
+        qs = ProductModel.objects.filter(id=product_id)
+        return await sync_to_async(qs.exists)()

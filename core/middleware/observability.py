@@ -69,7 +69,7 @@ class ObservabilityMiddleware:
                     trace_context = span.get_span_context()
                     trace_id = format_trace_id(trace_context.trace_id)
                     span_id = format_trace_id(trace_context.span_id)
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 # OpenTelemetry not fully initialized, skip trace context
                 pass
 
@@ -94,67 +94,86 @@ class ObservabilityMiddleware:
             duration = time.time() - start_time
 
             # Determine request status
-            request_status = "success"
-            if response.status_code >= 500:
-                request_status = "server_error"
-            elif response.status_code >= 400:
-                request_status = "client_error"
+            request_status = self._get_request_status(response)
 
-            # Log response (structured for Loki)
-            log_extra = {
-                "correlation_id": correlation_id,
-                "request_status": request_status,
-                "method": request.method,
-                "path": request.path,
-                "status_code": response.status_code,
-                "duration_ms": round(duration * 1000, 2),
-                "response_size": len(response.content),
-            }
-            if trace_id:
-                log_extra["trace_id"] = trace_id
-                log_extra["span_id"] = span_id
-
-            # Add brand context if available
-            brand = getattr(request, "brand", None)
-            if brand:
-                log_extra["brand_id"] = str(brand.id)
-                log_extra["brand_name"] = brand.name
-
-            # Add license key context if available
-            license_key = getattr(request, "license_key", None)
-            if license_key:
-                log_extra["license_key_id"] = str(license_key.id)
-
-            # Log based on status code
-            if response.status_code >= 500:
-                logger.error("Request completed with server error", extra=log_extra)
-            elif response.status_code >= 400:
-                logger.warning("Request completed with client error", extra=log_extra)
-            else:
-                logger.info("Request completed successfully", extra=log_extra)
+            # Log response
+            self._log_response(
+                request, response, correlation_id, request_status, duration, trace_id, span_id
+            )
 
             # Add observability headers
-            response["X-Correlation-ID"] = correlation_id
-            response["X-Request-Status"] = request_status
-            response["X-Request-Duration"] = f"{duration:.3f}"
-            if trace_id:
-                response["X-Trace-ID"] = trace_id
+            self._add_observability_headers(
+                response, correlation_id, request_status, duration, trace_id
+            )
 
             return response
-
-        except Exception as e:
-            duration = time.time() - start_time
-            logger.error(
-                "Request failed",
-                extra={
-                    "correlation_id": correlation_id,
-                    "request_status": "exception",
-                    "method": request.method,
-                    "path": request.path,
-                    "error": str(e),
-                    "error_type": type(e).__name__,
-                    "duration_ms": round(duration * 1000, 2),
-                },
-                exc_info=True,
-            )
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            self._handle_exception(request, e, start_time, correlation_id)
             raise
+
+    def _get_request_status(self, response: HttpResponse) -> str:
+        """Determine request status based on status code."""
+        if response.status_code >= 500:
+            return "server_error"
+        if response.status_code >= 400:
+            return "client_error"
+        return "success"
+
+    def _log_response(self, request, response, correlation_id, status, duration, trace_id, span_id):
+        """Log structured response information."""
+        log_extra = {
+            "correlation_id": correlation_id,
+            "request_status": status,
+            "method": request.method,
+            "path": request.path,
+            "status_code": response.status_code,
+            "duration_ms": round(duration * 1000, 2),
+            "response_size": len(response.content) if hasattr(response, "content") else 0,
+        }
+        if trace_id:
+            log_extra["trace_id"] = trace_id
+            log_extra["span_id"] = span_id
+
+        # Add brand context
+        brand = getattr(request, "brand", None)
+        if brand:
+            log_extra["brand_id"] = str(brand.id)
+            log_extra["brand_name"] = brand.name
+
+        # Add license key context
+        license_key = getattr(request, "license_key", None)
+        if license_key:
+            log_extra["license_key_id"] = str(license_key.id)
+
+        # Log based on status code
+        if response.status_code >= 500:
+            logger.error("Request completed with server error", extra=log_extra)
+        elif response.status_code >= 400:
+            logger.warning("Request completed with client error", extra=log_extra)
+        else:
+            logger.info("Request completed successfully", extra=log_extra)
+
+    def _add_observability_headers(self, response, correlation_id, status, duration, trace_id):
+        """Add observability headers to response."""
+        response["X-Correlation-ID"] = correlation_id
+        response["X-Request-Status"] = status
+        response["X-Request-Duration"] = f"{duration:.3f}"
+        if trace_id:
+            response["X-Trace-ID"] = trace_id
+
+    def _handle_exception(self, request, e, start_time, correlation_id):
+        """Handle and log request exception."""
+        duration = time.time() - start_time
+        logger.error(
+            "Request failed",
+            extra={
+                "correlation_id": correlation_id,
+                "request_status": "exception",
+                "method": request.method,
+                "path": request.path,
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "duration_ms": round(duration * 1000, 2),
+            },
+            exc_info=True,
+        )

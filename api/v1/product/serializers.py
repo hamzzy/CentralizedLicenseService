@@ -2,10 +2,6 @@
 Serializers for Product API endpoints.
 """
 
-import uuid
-from datetime import datetime
-from typing import Dict, Optional
-
 from rest_framework import serializers
 
 

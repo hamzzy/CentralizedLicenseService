@@ -65,6 +65,7 @@ class DjangoLicenseRepository(LicenseRepository):
         Returns:
             Django License model
         """
+        # pylint: disable=no-member
         model, created = LicenseModel.objects.get_or_create(
             id=license.id,
             defaults={
@@ -85,8 +86,7 @@ class DjangoLicenseRepository(LicenseRepository):
             model.updated_at = license.updated_at
         return model
 
-    @sync_to_async
-    def save(self, license: License) -> License:
+    async def save(self, license: License) -> License:
         """
         Save a license entity.
 
@@ -96,12 +96,11 @@ class DjangoLicenseRepository(LicenseRepository):
         Returns:
             Saved license entity
         """
-        model = self._to_model(license)
-        model.save()
+        model = await sync_to_async(self._to_model)(license)
+        await sync_to_async(model.save)()
         return self._to_domain(model)
 
-    @sync_to_async
-    def find_by_id(self, license_id: uuid.UUID) -> Optional[License]:
+    async def find_by_id(self, license_id: uuid.UUID) -> Optional[License]:
         """
         Find a license by ID.
 
@@ -112,13 +111,13 @@ class DjangoLicenseRepository(LicenseRepository):
             License entity or None if not found
         """
         try:
-            model = LicenseModel.objects.get(id=license_id)
+            # pylint: disable=no-member
+            model = await sync_to_async(LicenseModel.objects.get)(id=license_id)
             return self._to_domain(model)
-        except LicenseModel.DoesNotExist:
+        except LicenseModel.DoesNotExist:  # pylint: disable=no-member
             return None
 
-    @sync_to_async
-    def find_by_license_key(self, license_key_id: uuid.UUID) -> List[License]:
+    async def find_by_license_key(self, license_key_id: uuid.UUID) -> List[License]:
         """
         Find all licenses for a license key.
 
@@ -128,11 +127,13 @@ class DjangoLicenseRepository(LicenseRepository):
         Returns:
             List of License entities
         """
-        models = LicenseModel.objects.filter(license_key_id=license_key_id)
+        # pylint: disable=no-member
+        models = await sync_to_async(
+            lambda: list(LicenseModel.objects.filter(license_key_id=license_key_id))
+        )()
         return [self._to_domain(model) for model in models]
 
-    @sync_to_async
-    def find_by_license_key_and_product(
+    async def find_by_license_key_and_product(
         self, license_key_id: uuid.UUID, product_id: uuid.UUID
     ) -> Optional[License]:
         """
@@ -146,13 +147,15 @@ class DjangoLicenseRepository(LicenseRepository):
             License entity or None if not found
         """
         try:
-            model = LicenseModel.objects.get(license_key_id=license_key_id, product_id=product_id)
+            # pylint: disable=no-member
+            model = await sync_to_async(LicenseModel.objects.get)(
+                license_key_id=license_key_id, product_id=product_id
+            )
             return self._to_domain(model)
-        except LicenseModel.DoesNotExist:
+        except LicenseModel.DoesNotExist:  # pylint: disable=no-member
             return None
 
-    @sync_to_async
-    def exists(self, license_id: uuid.UUID) -> bool:
+    async def exists(self, license_id: uuid.UUID) -> bool:
         """
         Check if a license exists.
 
@@ -162,4 +165,5 @@ class DjangoLicenseRepository(LicenseRepository):
         Returns:
             True if license exists, False otherwise
         """
-        return LicenseModel.objects.filter(id=license_id).exists()
+        # pylint: disable=no-member
+        return await sync_to_async(lambda: LicenseModel.objects.filter(id=license_id).exists())()

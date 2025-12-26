@@ -47,9 +47,9 @@ class Brand(models.Model):
             raise ValidationError("Prefix is required")
         if len(self.prefix) < 2 or len(self.prefix) > 10:
             raise ValidationError("Prefix must be between 2 and 10 characters")
-        if not self.prefix.replace("-", "").replace("_", "").isalnum():
+        if not str(self.prefix).replace("-", "").replace("_", "").isalnum():
             raise ValidationError(
-                "Prefix must contain only alphanumeric characters, " "hyphens, or underscores"
+                "Prefix must contain only alphanumeric characters, hyphens, or underscores"
             )
 
     def save(self, *args, **kwargs):
@@ -58,7 +58,7 @@ class Brand(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     def generate_api_key(self, scope="full"):
         """
@@ -68,8 +68,8 @@ class Brand(models.Model):
             scope: API key scope ('full' or 'read')
 
         Returns:
-            ApiKey instance with _raw_key attribute set
         """
+        # pylint: disable=no-member
         return ApiKey.objects.create(
             brand=self,
             scope=scope,
@@ -110,6 +110,7 @@ class ApiKey(models.Model):
         """Validate API key fields."""
         from django.core.exceptions import ValidationError
 
+        # pylint: disable=no-member
         if not self.brand_id:
             raise ValidationError("Brand is required")
 
@@ -123,7 +124,7 @@ class ApiKey(models.Model):
                 raw_key.encode(),
             ).hexdigest()
             # Store the raw key temporarily for retrieval
-            self._raw_key = raw_key
+            self._raw_key = raw_key  # pylint: disable=attribute-defined-outside-init
         self.full_clean()
         super().save(*args, **kwargs)
 

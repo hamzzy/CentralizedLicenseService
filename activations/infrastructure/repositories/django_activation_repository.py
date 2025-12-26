@@ -70,6 +70,7 @@ class DjangoActivationRepository(ActivationRepository):
         metadata = activation.instance_metadata.copy()
         metadata["instance_type"] = activation.instance_identifier.instance_type.value
 
+        # pylint: disable=no-member
         model, created = ActivationModel.objects.get_or_create(
             id=activation.id,
             defaults={
@@ -91,8 +92,7 @@ class DjangoActivationRepository(ActivationRepository):
             model.is_active = activation.is_active
         return model
 
-    @sync_to_async
-    def save(self, activation: Activation) -> Activation:
+    async def save(self, activation: Activation) -> Activation:
         """
         Save an activation entity.
 
@@ -102,12 +102,11 @@ class DjangoActivationRepository(ActivationRepository):
         Returns:
             Saved activation entity
         """
-        model = self._to_model(activation)
-        model.save()
+        model = await sync_to_async(self._to_model)(activation)
+        await sync_to_async(model.save)()
         return self._to_domain(model)
 
-    @sync_to_async
-    def find_by_id(self, activation_id: uuid.UUID) -> Optional[Activation]:
+    async def find_by_id(self, activation_id: uuid.UUID) -> Optional[Activation]:
         """
         Find an activation by ID.
 
@@ -118,13 +117,13 @@ class DjangoActivationRepository(ActivationRepository):
             Activation entity or None if not found
         """
         try:
-            model = ActivationModel.objects.get(id=activation_id)
+            # pylint: disable=no-member
+            model = await sync_to_async(ActivationModel.objects.get)(id=activation_id)
             return self._to_domain(model)
-        except ActivationModel.DoesNotExist:
+        except ActivationModel.DoesNotExist:  # pylint: disable=no-member
             return None
 
-    @sync_to_async
-    def find_by_license_and_instance(
+    async def find_by_license_and_instance(
         self, license_id: uuid.UUID, instance_identifier: str
     ) -> Optional[Activation]:
         """
@@ -138,16 +137,16 @@ class DjangoActivationRepository(ActivationRepository):
             Activation entity or None if not found
         """
         try:
-            model = ActivationModel.objects.get(
+            # pylint: disable=no-member
+            model = await sync_to_async(ActivationModel.objects.get)(
                 license_id=license_id,
                 instance_identifier=instance_identifier,
             )
             return self._to_domain(model)
-        except ActivationModel.DoesNotExist:
+        except ActivationModel.DoesNotExist:  # pylint: disable=no-member
             return None
 
-    @sync_to_async
-    def find_active_by_license(self, license_id: uuid.UUID) -> List[Activation]:
+    async def find_active_by_license(self, license_id: uuid.UUID) -> List[Activation]:
         """
         Find all active activations for a license.
 
@@ -157,11 +156,16 @@ class DjangoActivationRepository(ActivationRepository):
         Returns:
             List of active Activation entities
         """
-        models = ActivationModel.objects.filter(license_id=license_id, is_active=True)
+        models = await sync_to_async(
+            lambda: list(
+                ActivationModel.objects.filter(  # pylint: disable=no-member
+                    license_id=license_id, is_active=True
+                )
+            )
+        )()
         return [self._to_domain(model) for model in models]
 
-    @sync_to_async
-    def find_all_by_license(self, license_id: uuid.UUID) -> List[Activation]:
+    async def find_all_by_license(self, license_id: uuid.UUID) -> List[Activation]:
         """
         Find all activations for a license (active and inactive).
 
@@ -171,11 +175,14 @@ class DjangoActivationRepository(ActivationRepository):
         Returns:
             List of Activation entities
         """
-        models = ActivationModel.objects.filter(license_id=license_id)
+        models = await sync_to_async(
+            lambda: list(
+                ActivationModel.objects.filter(license_id=license_id)  # pylint: disable=no-member
+            )
+        )()
         return [self._to_domain(model) for model in models]
 
-    @sync_to_async
-    def exists(self, activation_id: uuid.UUID) -> bool:
+    async def exists(self, activation_id: uuid.UUID) -> bool:
         """
         Check if an activation exists.
 
@@ -185,4 +192,8 @@ class DjangoActivationRepository(ActivationRepository):
         Returns:
             True if activation exists, False otherwise
         """
-        return ActivationModel.objects.filter(id=activation_id).exists()
+        return await sync_to_async(
+            lambda: ActivationModel.objects.filter(
+                id=activation_id
+            ).exists()  # pylint: disable=no-member
+        )()

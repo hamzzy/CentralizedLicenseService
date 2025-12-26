@@ -31,7 +31,6 @@ class ActivationRepository(ABC):
         Returns:
             Saved activation entity
         """
-        pass
 
     @abstractmethod
     async def find_by_id(self, activation_id: uuid.UUID) -> Optional[Activation]:
@@ -44,7 +43,6 @@ class ActivationRepository(ABC):
         Returns:
             Activation entity or None if not found
         """
-        pass
 
     @abstractmethod
     async def find_by_license_and_instance(
@@ -60,7 +58,6 @@ class ActivationRepository(ABC):
         Returns:
             Activation entity or None if not found
         """
-        pass
 
     @abstractmethod
     async def find_active_by_license(self, license_id: uuid.UUID) -> List[Activation]:
@@ -73,7 +70,6 @@ class ActivationRepository(ABC):
         Returns:
             List of active Activation entities
         """
-        pass
 
     @abstractmethod
     async def find_all_by_license(self, license_id: uuid.UUID) -> List[Activation]:
@@ -86,7 +82,6 @@ class ActivationRepository(ABC):
         Returns:
             List of Activation entities
         """
-        pass
 
     @abstractmethod
     async def exists(self, activation_id: uuid.UUID) -> bool:
@@ -99,4 +94,3 @@ class ActivationRepository(ABC):
         Returns:
             True if activation exists, False otherwise
         """
-        pass

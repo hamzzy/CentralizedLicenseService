@@ -14,7 +14,7 @@ from core.domain.value_objects import InstanceIdentifier, InstanceType
 
 
 @dataclass(frozen=True)
-class Activation:
+class Activation:  # pylint: disable=too-many-instance-attributes
     """
     Activation domain entity.
 

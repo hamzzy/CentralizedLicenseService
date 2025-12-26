@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     # Local apps
-    "CentralizedLicenseService.apps.CentralizedLicenseServiceConfig",  # Must be first to setup observability
+    # Must be first to setup observability
+    "CentralizedLicenseService.apps.CentralizedLicenseServiceConfig",
     "core",
     "brands",
     "products",
@@ -175,14 +176,19 @@ SPECTACULAR_SETTINGS = {
         "x-code-samples": [
             {
                 "lang": "curl",
-                "source": 'curl -X POST "https://api.example.com/api/v1/brand/licenses/provision" \\\n  -H "X-API-Key: your-api-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"customer_email": "customer@example.com", "products": ["product-uuid"]}\'',
+                "source": (
+                    'curl -X POST "https://api.example.com/api/v1/brand/licenses/provision" \\\n'
+                    '  -H "X-API-Key: your-api-key-here" \\\n'
+                    '  -H "Content-Type: application/json" \\\n'
+                    '  -d \'{"customer_email": "customer@example.com", '
+                    '"products": ["product-uuid"]}\''
+                ),
             }
         ],
     },
 }
 
 # Redis Cache
-import os
 
 # In Docker, use service name 'redis', locally use '127.0.0.1'
 default_redis_url = (

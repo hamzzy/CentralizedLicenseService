@@ -75,14 +75,18 @@ class TenantMiddleware:
                 import hashlib
 
                 api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
-                api_key_obj = ApiKey.objects.filter(
+                api_key_obj = ApiKey.objects.filter(  # pylint: disable=no-member
                     key_hash=api_key_hash,
                 ).first()
                 if api_key_obj and api_key_obj.is_valid():
                     tenant_id = api_key_obj.brand.id
-                    logger.debug(f"Tenant context set to brand_id={tenant_id}")
-            except Exception as e:
-                logger.warning(f"Error looking up tenant: {e}")
+                    logger.debug("Tenant context set to brand_id=%s", tenant_id)
+            except ApiKey.DoesNotExist:  # pylint: disable=no-member
+                # API key not found, tenant_id remains None
+                pass
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                logger.warning("Error fetching tenant for API key: %s", e)
+                # tenant_id remains None
 
         # Set tenant context
         tenant_context.set(tenant_id)

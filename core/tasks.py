@@ -42,4 +42,4 @@ def process_event_from_rabbitmq(event_data: dict):
             # Simplified - in production, reconstruct proper event object
             loop.run_until_complete(handler.handle(data))
         except Exception as e:
-            logger.error(f"Handler {handler.__class__.__name__} failed: {e}")
+            logger.error("Handler %s failed: %s", handler.__class__.__name__, e)

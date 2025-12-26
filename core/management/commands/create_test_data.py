@@ -113,6 +113,7 @@ class Command(BaseCommand):
         license_key = None
         if not options["skip_license"]:
             license_key = await self.create_test_license(brand, product, options["customer_email"])
+            # pylint: disable=no-member
             self.stdout.write(self.style.SUCCESS(f"\n✅ Test License Key: {license_key.key}\n"))
 
         return brand, api_key, product, license_key
@@ -124,10 +125,12 @@ class Command(BaseCommand):
         password = "admin"
 
         if User.objects.filter(username=username).exists():
+            # pylint: disable=no-member
             self.stdout.write(self.style.WARNING(f"Superuser '{username}' already exists"))
             return
 
         User.objects.create_superuser(username=username, email=email, password=password)
+        # pylint: disable=no-member
         self.stdout.write(self.style.SUCCESS(f"✅ Created superuser: {username} / {password}"))
 
     async def create_brand(self, name: str, slug: str = None, prefix: str = None) -> Brand:
@@ -145,8 +148,10 @@ class Command(BaseCommand):
                 prefix = "TEST"
 
         # Check if brand already exists
+        # pylint: disable=no-member
         existing = BrandModel.objects.filter(slug=slug).first()
         if existing:
+            # pylint: disable=no-member
             self.stdout.write(self.style.WARNING(f"Brand '{name}' already exists (slug: {slug})"))
             return await brand_repo.find_by_id(existing.id)
 
@@ -154,6 +159,7 @@ class Command(BaseCommand):
         brand = Brand.create(name=name, slug=slug, prefix=prefix)
         brand = await brand_repo.save(brand)
 
+        # pylint: disable=no-member
         self.stdout.write(
             self.style.SUCCESS(
                 f"✅ Created brand: {brand.name} " f"(slug: {slug}, prefix: {prefix})"
@@ -164,8 +170,10 @@ class Command(BaseCommand):
     def create_api_key(self, brand: Brand) -> ApiKey:
         """Create an API key for the brand."""
         # Check if API key already exists
+        # pylint: disable=no-member
         existing = ApiKey.objects.filter(brand_id=brand.id).first()
         if existing:
+            # pylint: disable=no-member
             self.stdout.write(
                 self.style.WARNING(f"API key already exists for brand '{brand.name}'")
             )
@@ -179,10 +187,12 @@ class Command(BaseCommand):
             return existing
 
         # Get BrandModel to use generate_api_key method
+        # pylint: disable=no-member
         brand_model = BrandModel.objects.get(id=brand.id)
         api_key = brand_model.generate_api_key(scope="full")
-        raw_key = api_key._raw_key  # type: ignore
+        raw_key = api_key._raw_key  # pylint: disable=protected-access
 
+        # pylint: disable=no-member
         self.stdout.write(self.style.SUCCESS(f"✅ Created API key: {raw_key}"))
         self.stdout.write(
             self.style.WARNING("⚠️  Save this API key - it cannot be retrieved later!")
@@ -200,6 +210,7 @@ class Command(BaseCommand):
         existing_products = await product_repo.list_by_brand(brand.id)
         for existing in existing_products:
             if existing.slug.value == slug:
+                # pylint: disable=no-member
                 self.stdout.write(
                     self.style.WARNING(f"Product '{name}' already exists (slug: {slug})")
                 )
@@ -209,6 +220,7 @@ class Command(BaseCommand):
         product = Product.create(brand_id=brand.id, name=name, slug=slug)
         product = await product_repo.save(product)
 
+        # pylint: disable=no-member
         self.stdout.write(self.style.SUCCESS(f"✅ Created product: {product.name} (slug: {slug})"))
         return product
 
@@ -237,6 +249,7 @@ class Command(BaseCommand):
         license_entity = await license_repo.save(license_entity)
 
         self.stdout.write(
+            # pylint: disable=no-member
             self.style.SUCCESS(f"✅ Created license key and license for {customer_email}")
         )
         return license_key
@@ -249,6 +262,7 @@ class Command(BaseCommand):
         license_key: LicenseKey = None,
     ):
         """Print summary of created test data."""
+        # pylint: disable=no-member
         self.stdout.write(self.style.SUCCESS("\n" + "=" * 60))
         self.stdout.write(self.style.SUCCESS("📋 Test Data Summary"))
         self.stdout.write(self.style.SUCCESS("=" * 60))
@@ -268,13 +282,13 @@ class Command(BaseCommand):
         if raw_key:
             self.stdout.write("\n🔑 API Key:")
             self.stdout.write(f"   {raw_key}")
+            # pylint: disable=no-member
             self.stdout.write(self.style.WARNING("   ⚠️  Save this - it cannot be retrieved later!"))
         else:
             self.stdout.write("\n🔑 API Key:")
             self.stdout.write(
-                self.style.WARNING(
-                    "   API key already exists. Create a new one via " "Django admin."
-                )
+                # pylint: disable=no-member
+                self.style.WARNING("   API key already exists. Create a new one via Django admin.")
             )
 
         self.stdout.write("\n📦 Product:")
@@ -289,8 +303,9 @@ class Command(BaseCommand):
 
         self.stdout.write("\n📝 Example API Request:")
         if raw_key:
+            # pylint: disable=no-member
             self.stdout.write(
-                "   curl -X POST " "http://localhost:8000/api/v1/brand/licenses/provision \\"
+                "   curl -X POST http://localhost:8000/api/v1/brand/licenses/provision \\"
             )
             self.stdout.write(f'     -H "X-API-Key: {raw_key}" \\')
             self.stdout.write('     -H "Content-Type: application/json" \\')

@@ -108,8 +108,8 @@ class ApiKeyAdmin(admin.ModelAdmin):
         """Display raw key if available."""
         if hasattr(obj, "_raw_key"):
             return format_html(
-                '<code style="background: #f0f0f0; padding: 4px 8px; '
-                'border-radius: 3px;">{}</code>',
+                '<code style="background: #f0f0f0; padding: 4px 8px; ',
+                # pylint: disable=protected-access
                 obj._raw_key,
             )
         return format_html(
@@ -129,7 +129,7 @@ class ApiKeyAdmin(admin.ModelAdmin):
         if not change and hasattr(obj, "_raw_key"):
             self.message_user(
                 request,
-                f"API Key created! Raw key: {obj._raw_key} "
+                f"API Key created! Raw key: {obj._raw_key} "  # pylint: disable=protected-access
                 "(Save this - it won't be shown again)",
                 level="WARNING",
             )

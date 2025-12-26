@@ -52,12 +52,13 @@ class LicenseKey(models.Model):
         ]
 
     def __str__(self):
-        return self.key
+        return str(self.key)
 
     def clean(self):
         """Validate license key fields."""
         from django.core.exceptions import ValidationError
 
+        # pylint: disable=no-member
         if not self.brand_id:
             raise ValidationError("Brand is required")
         if not self.brand.prefix:
@@ -66,9 +67,9 @@ class LicenseKey(models.Model):
     def save(self, *args, **kwargs):
         """Generate license key and hash on first save."""
         if not self.key:
-            if not self.brand_id:
+            if not self.brand_id:  # pylint: disable=no-member
                 raise ValueError("Brand must be set before generating license key")
-            self.key = generate_license_key(self.brand.prefix)
+            self.key = generate_license_key(self.brand.prefix)  # pylint: disable=no-member
         if not self.key_hash:
             self.key_hash = hashlib.sha256(self.key.encode()).hexdigest()
         self.full_clean()
@@ -134,7 +135,8 @@ class License(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.license_key.key} - {self.product.name}"
+        # pylint: disable=no-member
+        return f"{str(self.license_key.key)} - {self.product.name}"
 
     @property
     def is_valid(self) -> bool:
@@ -158,6 +160,7 @@ class License(models.Model):
         Returns:
             Number of active activations
         """
+        # pylint: disable=no-member
         return self.activations.count()
 
     @property
@@ -281,7 +284,7 @@ class IdempotencyKey(models.Model):
         ]
 
     def __str__(self):
-        return self.key
+        return str(self.key)
 
     def save(self, *args, **kwargs):
         """Set default expiration if not provided."""

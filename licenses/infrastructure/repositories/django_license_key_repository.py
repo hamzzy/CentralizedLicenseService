@@ -56,6 +56,7 @@ class DjangoLicenseKeyRepository(LicenseKeyRepository):
         Returns:
             Django LicenseKey model
         """
+        # pylint: disable=no-member
         model, created = LicenseKeyModel.objects.get_or_create(
             id=license_key.id,
             defaults={
@@ -75,8 +76,7 @@ class DjangoLicenseKeyRepository(LicenseKeyRepository):
             model.updated_at = license_key.updated_at
         return model
 
-    @sync_to_async
-    def save(self, license_key: LicenseKey) -> LicenseKey:
+    async def save(self, license_key: LicenseKey) -> LicenseKey:
         """
         Save a license key entity.
 
@@ -86,12 +86,11 @@ class DjangoLicenseKeyRepository(LicenseKeyRepository):
         Returns:
             Saved license key entity
         """
-        model = self._to_model(license_key)
-        model.save()
+        model = await sync_to_async(self._to_model)(license_key)
+        await sync_to_async(model.save)()
         return self._to_domain(model)
 
-    @sync_to_async
-    def find_by_id(self, license_key_id: uuid.UUID) -> Optional[LicenseKey]:
+    async def find_by_id(self, license_key_id: uuid.UUID) -> Optional[LicenseKey]:
         """
         Find a license key by ID.
 
@@ -102,13 +101,13 @@ class DjangoLicenseKeyRepository(LicenseKeyRepository):
             LicenseKey entity or None if not found
         """
         try:
-            model = LicenseKeyModel.objects.get(id=license_key_id)
+            # pylint: disable=no-member
+            model = await sync_to_async(LicenseKeyModel.objects.get)(id=license_key_id)
             return self._to_domain(model)
-        except LicenseKeyModel.DoesNotExist:
+        except LicenseKeyModel.DoesNotExist:  # pylint: disable=no-member
             return None
 
-    @sync_to_async
-    def find_by_key(self, key: str) -> Optional[LicenseKey]:
+    async def find_by_key(self, key: str) -> Optional[LicenseKey]:
         """
         Find a license key by key string.
 
@@ -119,13 +118,13 @@ class DjangoLicenseKeyRepository(LicenseKeyRepository):
             LicenseKey entity or None if not found
         """
         try:
-            model = LicenseKeyModel.objects.get(key=key)
+            # pylint: disable=no-member
+            model = await sync_to_async(LicenseKeyModel.objects.get)(key=key)
             return self._to_domain(model)
-        except LicenseKeyModel.DoesNotExist:
+        except LicenseKeyModel.DoesNotExist:  # pylint: disable=no-member
             return None
 
-    @sync_to_async
-    def find_by_key_hash(self, key_hash: str) -> Optional[LicenseKey]:
+    async def find_by_key_hash(self, key_hash: str) -> Optional[LicenseKey]:
         """
         Find a license key by key hash.
 
@@ -136,13 +135,13 @@ class DjangoLicenseKeyRepository(LicenseKeyRepository):
             LicenseKey entity or None if not found
         """
         try:
-            model = LicenseKeyModel.objects.get(key_hash=key_hash)
+            # pylint: disable=no-member
+            model = await sync_to_async(LicenseKeyModel.objects.get)(key_hash=key_hash)
             return self._to_domain(model)
-        except LicenseKeyModel.DoesNotExist:
+        except LicenseKeyModel.DoesNotExist:  # pylint: disable=no-member
             return None
 
-    @sync_to_async
-    def find_by_customer_email(self, brand_id: uuid.UUID, email: str) -> List[LicenseKey]:
+    async def find_by_customer_email(self, brand_id: uuid.UUID, email: str) -> List[LicenseKey]:
         """
         Find license keys by customer email and brand.
 
@@ -153,11 +152,13 @@ class DjangoLicenseKeyRepository(LicenseKeyRepository):
         Returns:
             List of LicenseKey entities
         """
-        models = LicenseKeyModel.objects.filter(brand_id=brand_id, customer_email=email)
+        # pylint: disable=no-member
+        models = await sync_to_async(
+            lambda: list(LicenseKeyModel.objects.filter(brand_id=brand_id, customer_email=email))
+        )()
         return [self._to_domain(model) for model in models]
 
-    @sync_to_async
-    def exists(self, license_key_id: uuid.UUID) -> bool:
+    async def exists(self, license_key_id: uuid.UUID) -> bool:
         """
         Check if a license key exists.
 
@@ -167,4 +168,7 @@ class DjangoLicenseKeyRepository(LicenseKeyRepository):
         Returns:
             True if license key exists, False otherwise
         """
-        return LicenseKeyModel.objects.filter(id=license_key_id).exists()
+        # pylint: disable=no-member
+        return await sync_to_async(
+            lambda: LicenseKeyModel.objects.filter(id=license_key_id).exists()
+        )()
