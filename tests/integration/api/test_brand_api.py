@@ -208,7 +208,11 @@ class TestBrandAPI:
         assert response.status_code == 400
         data = response.json()
         assert "error" in data
-        assert "Can only resume a suspended license" in data["error"]
+        assert "message" in data["error"]
+        assert "trace_id" not in data["error"]  # trace_id only in header
+        assert "Can only resume a suspended license" in data["error"]["message"]
+        # Check trace_id is in header
+        assert "X-Trace-ID" in response or "x-trace-id" in response
 
     def test_renew_license_past_date(self, api_client, db_license):
         """Test renewing a license with a past date (should fail)."""
@@ -239,4 +243,8 @@ class TestBrandAPI:
         assert response.status_code == 400
         data = response.json()
         assert "error" in data
-        assert "Expiration date cannot be in the past" in data["error"]
+        assert "message" in data["error"]
+        assert "trace_id" not in data["error"]  # trace_id only in header
+        assert "Expiration date cannot be in the past" in data["error"]["message"]
+        # Check trace_id is in header
+        assert "X-Trace-ID" in response or "x-trace-id" in response

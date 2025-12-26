@@ -93,9 +93,17 @@ class ObservabilityMiddleware:
             response = self.get_response(request)
             duration = time.time() - start_time
 
+            # Determine request status
+            request_status = "success"
+            if response.status_code >= 500:
+                request_status = "server_error"
+            elif response.status_code >= 400:
+                request_status = "client_error"
+
             # Log response (structured for Loki)
             log_extra = {
                 "correlation_id": correlation_id,
+                "request_status": request_status,
                 "method": request.method,
                 "path": request.path,
                 "status_code": response.status_code,
@@ -127,6 +135,7 @@ class ObservabilityMiddleware:
 
             # Add observability headers
             response["X-Correlation-ID"] = correlation_id
+            response["X-Request-Status"] = request_status
             response["X-Request-Duration"] = f"{duration:.3f}"
             if trace_id:
                 response["X-Trace-ID"] = trace_id
@@ -139,9 +148,11 @@ class ObservabilityMiddleware:
                 "Request failed",
                 extra={
                     "correlation_id": correlation_id,
+                    "request_status": "exception",
                     "method": request.method,
                     "path": request.path,
                     "error": str(e),
+                    "error_type": type(e).__name__,
                     "duration_ms": round(duration * 1000, 2),
                 },
                 exc_info=True,

@@ -12,6 +12,14 @@ from activations.domain.activation import Activation
 from activations.ports.activation_repository import ActivationRepository
 from licenses.domain.license import License
 from licenses.ports.license_repository import LicenseRepository
+from core.domain.exceptions import (
+    DomainException,
+    LicenseExpiredError,
+    LicenseSuspendedError,
+    LicenseCancelledError,
+    SeatLimitExceededError,
+    InvalidLicenseStatusError,
+)
 
 
 class SeatManager:
@@ -122,7 +130,18 @@ class SeatManager:
             license, instance_identifier, activation_repository
         )
         if not can_activate:
-            raise ValueError(error)
+            error_lower = error.lower()
+            if "expired" in error_lower:
+                raise LicenseExpiredError(error)
+            if "suspended" in error_lower:
+                raise LicenseSuspendedError(error)
+            if "cancelled" in error_lower:
+                raise LicenseCancelledError(error)
+            if "seat limit" in error_lower:
+                raise SeatLimitExceededError(error)
+            if "already activated" in error_lower:
+                raise InvalidLicenseStatusError(error)
+            raise DomainException(error)
 
         # Check for existing activation (reuse if inactive)
         existing = await activation_repository.find_by_license_and_instance(
@@ -131,7 +150,7 @@ class SeatManager:
         if existing:
             # If already active, should have been caught by can_activate, but double check
             if existing.is_active:
-                raise ValueError("Instance already activated")
+                raise InvalidLicenseStatusError("Instance already activated")
 
             # Reactivate
             activation = existing.reactivate()

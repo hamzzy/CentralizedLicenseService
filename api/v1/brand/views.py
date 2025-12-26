@@ -108,7 +108,6 @@ class ProvisionLicenseView(APIView):
             span.set_attribute("brand.name", brand.name)
             span.set_attribute("customer_email", serializer.validated_data["customer_email"])
 
-        try:
             handler = ProvisionLicenseHandler(
                 brand_repository=_brand_repo,
                 product_repository=_product_repo,
@@ -135,42 +134,6 @@ class ProvisionLicenseView(APIView):
             span.set_status(Status(StatusCode.OK))
 
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-
-        except DomainException as e:
-            span.set_attribute("error", "domain_exception")
-            span.set_attribute("error.type", type(e).__name__)
-            span.set_attribute("error.message", str(e))
-            if hasattr(e, "code"):
-                span.set_attribute("error.code", str(e.code))
-                import traceback
-
-                try:
-                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-                    if len(tb_str) > 5000:
-                        tb_str = tb_str[:5000] + "... (truncated)"
-                    span.set_attribute("error.stack_trace", tb_str)
-                except Exception:
-                    pass
-            span.set_status(Status(StatusCode.ERROR, str(e)))
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            span.set_attribute("error", "internal_error")
-            span.set_attribute("error.type", type(e).__name__)
-            span.set_attribute("error.message", str(e))
-            import traceback
-
-            try:
-                tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-                if len(tb_str) > 10000:
-                    tb_str = tb_str[:10000] + "... (truncated)"
-                span.set_attribute("error.stack_trace", tb_str)
-            except Exception:
-                pass
-            span.set_status(Status(StatusCode.ERROR, "Internal server error"))
-        return Response(
-            {"error": "Internal server error"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
 
 
 class RenewLicenseView(APIView):
@@ -209,40 +172,27 @@ class RenewLicenseView(APIView):
             if brand:
                 span.set_attribute("brand.id", str(brand.id))
 
-            try:
-                handler = RenewLicenseHandler(
-                    license_repository=_license_repo,
-                    license_key_repository=_license_key_repo,
-                )
+            handler = RenewLicenseHandler(
+                license_repository=_license_repo,
+                license_key_repository=_license_key_repo,
+            )
 
-                command = RenewLicenseCommand(
-                    license_id=license_id,
-                    expiration_date=serializer.validated_data["expiration_date"],
-                )
+            command = RenewLicenseCommand(
+                license_id=license_id,
+                expiration_date=serializer.validated_data["expiration_date"],
+            )
 
-                span.set_attribute(
-                    "expiration_date", str(serializer.validated_data["expiration_date"])
-                )
+            span.set_attribute(
+                "expiration_date", str(serializer.validated_data["expiration_date"])
+            )
 
-                await handler.handle(command)
+            await handler.handle(command)
 
-                span.set_status(Status(StatusCode.OK))
-                return Response(
-                    {"message": "License renewed successfully"},
-                    status=status.HTTP_200_OK,
-                )
-
-            except DomainException as e:
-                span.set_attribute("error", "domain_exception")
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception:
-                span.set_attribute("error", "internal_error")
-                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
-                return Response(
-                    {"error": "Internal server error"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
+            span.set_status(Status(StatusCode.OK))
+            return Response(
+                {"message": "License renewed successfully"},
+                status=status.HTTP_200_OK,
+            )
 
 
 class SuspendLicenseView(APIView):
@@ -281,39 +231,26 @@ class SuspendLicenseView(APIView):
             if brand:
                 span.set_attribute("brand.id", str(brand.id))
 
-            try:
-                handler = SuspendLicenseHandler(
-                    license_repository=_license_repo,
-                    license_key_repository=_license_key_repo,
-                )
+            handler = SuspendLicenseHandler(
+                license_repository=_license_repo,
+                license_key_repository=_license_key_repo,
+            )
 
-                command = SuspendLicenseCommand(
-                    license_id=license_id,
-                    reason=serializer.validated_data.get("reason"),
-                )
+            command = SuspendLicenseCommand(
+                license_id=license_id,
+                reason=serializer.validated_data.get("reason"),
+            )
 
-                if serializer.validated_data.get("reason"):
-                    span.set_attribute("reason", serializer.validated_data.get("reason"))
+            if serializer.validated_data.get("reason"):
+                span.set_attribute("reason", serializer.validated_data.get("reason"))
 
-                await handler.handle(command)
+            await handler.handle(command)
 
-                span.set_status(Status(StatusCode.OK))
-                return Response(
-                    {"message": "License suspended successfully"},
-                    status=status.HTTP_200_OK,
-                )
-
-            except DomainException as e:
-                span.set_attribute("error", "domain_exception")
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception:
-                span.set_attribute("error", "internal_error")
-                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
-                return Response(
-                    {"error": "Internal server error"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
+            span.set_status(Status(StatusCode.OK))
+            return Response(
+                {"message": "License suspended successfully"},
+                status=status.HTTP_200_OK,
+            )
 
 
 class ResumeLicenseView(APIView):
@@ -352,44 +289,20 @@ class ResumeLicenseView(APIView):
             if brand:
                 span.set_attribute("brand.id", str(brand.id))
 
-            try:
-                handler = ResumeLicenseHandler(
-                    license_repository=_license_repo,
-                    license_key_repository=_license_key_repo,
-                )
+            handler = ResumeLicenseHandler(
+                license_repository=_license_repo,
+                license_key_repository=_license_key_repo,
+            )
 
-                command = ResumeLicenseCommand(license_id=license_id)
+            command = ResumeLicenseCommand(license_id=license_id)
 
-                await handler.handle(command)
+            await handler.handle(command)
 
-                span.set_status(Status(StatusCode.OK))
-                return Response(
-                    {"message": "License resumed successfully"},
-                    status=status.HTTP_200_OK,
-                )
-
-            except DomainException as e:
-                span.set_attribute("error", "domain_exception")
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception as e:
-                span.set_attribute("error", "internal_error")
-                span.set_attribute("error.type", type(e).__name__)
-                span.set_attribute("error.message", str(e))
-                import traceback
-
-                try:
-                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-                    if len(tb_str) > 10000:
-                        tb_str = tb_str[:10000] + "... (truncated)"
-                    span.set_attribute("error.stack_trace", tb_str)
-                except Exception:
-                    pass
-                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
-                return Response(
-                    {"error": "Internal server error"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
+            span.set_status(Status(StatusCode.OK))
+            return Response(
+                {"message": "License resumed successfully"},
+                status=status.HTTP_200_OK,
+            )
 
 
 class CancelLicenseView(APIView):
@@ -428,50 +341,26 @@ class CancelLicenseView(APIView):
             if brand:
                 span.set_attribute("brand.id", str(brand.id))
 
-            try:
-                handler = CancelLicenseHandler(
-                    license_repository=_license_repo,
-                    license_key_repository=_license_key_repo,
-                )
+            handler = CancelLicenseHandler(
+                license_repository=_license_repo,
+                license_key_repository=_license_key_repo,
+            )
 
-                command = CancelLicenseCommand(
-                    license_id=license_id,
-                    reason=serializer.validated_data.get("reason"),
-                )
+            command = CancelLicenseCommand(
+                license_id=license_id,
+                reason=serializer.validated_data.get("reason"),
+            )
 
-                if serializer.validated_data.get("reason"):
-                    span.set_attribute("reason", serializer.validated_data.get("reason"))
+            if serializer.validated_data.get("reason"):
+                span.set_attribute("reason", serializer.validated_data.get("reason"))
 
-                await handler.handle(command)
+            await handler.handle(command)
 
-                span.set_status(Status(StatusCode.OK))
-                return Response(
-                    {"message": "License cancelled successfully"},
-                    status=status.HTTP_200_OK,
-                )
-
-            except DomainException as e:
-                span.set_attribute("error", "domain_exception")
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception as e:
-                span.set_attribute("error", "internal_error")
-                span.set_attribute("error.type", type(e).__name__)
-                span.set_attribute("error.message", str(e))
-                import traceback
-
-                try:
-                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-                    if len(tb_str) > 10000:
-                        tb_str = tb_str[:10000] + "... (truncated)"
-                    span.set_attribute("error.stack_trace", tb_str)
-                except Exception:
-                    pass
-                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
-                return Response(
-                    {"error": "Internal server error"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
+            span.set_status(Status(StatusCode.OK))
+            return Response(
+                {"message": "License cancelled successfully"},
+                status=status.HTTP_200_OK,
+            )
 
 
 class ListLicensesByEmailView(APIView):
@@ -526,33 +415,20 @@ class ListLicensesByEmailView(APIView):
 
             span.set_attribute("customer_email", email)
 
-            try:
-                handler = ListLicensesByEmailHandler(
-                    license_key_repository=_license_key_repo,
-                    license_repository=_license_repo,
-                    brand_repository=_brand_repo,
-                    product_repository=_product_repo,
-                    activation_repository=_activation_repo,
-                )
+            handler = ListLicensesByEmailHandler(
+                license_key_repository=_license_key_repo,
+                license_repository=_license_repo,
+                brand_repository=_brand_repo,
+                product_repository=_product_repo,
+                activation_repository=_activation_repo,
+            )
 
-                query = ListLicensesByEmailQuery(customer_email=email, brand_id=brand.id)
+            query = ListLicensesByEmailQuery(customer_email=email, brand_id=brand.id)
 
-                result = await handler.handle(query)
+            result = await handler.handle(query)
 
-                serializer = LicenseListItemSerializer(result, many=True)
-                span.set_attribute("licenses.count", len(result))
-                span.set_status(Status(StatusCode.OK))
+            serializer = LicenseListItemSerializer(result, many=True)
+            span.set_attribute("licenses.count", len(result))
+            span.set_status(Status(StatusCode.OK))
 
-                return Response(serializer.data, status=status.HTTP_200_OK)
-
-            except DomainException as e:
-                span.set_attribute("error", "domain_exception")
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception:
-                span.set_attribute("error", "internal_error")
-                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
-                return Response(
-                    {"error": "Internal server error"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
+            return Response(serializer.data, status=status.HTTP_200_OK)

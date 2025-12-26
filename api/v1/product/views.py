@@ -106,103 +106,44 @@ class ActivateLicenseView(APIView):
             )
             span.set_attribute("instance_type", serializer.validated_data["instance_type"])
 
-            try:
-                handler = ActivateLicenseHandler(
-                    license_key_repository=_license_key_repo,
-                    license_repository=_license_repo,
-                    product_repository=_product_repo,
-                    activation_repository=_activation_repo,
-                )
+            handler = ActivateLicenseHandler(
+                license_key_repository=_license_key_repo,
+                license_repository=_license_repo,
+                product_repository=_product_repo,
+                activation_repository=_activation_repo,
+            )
 
-                # Map instance type string to enum
-                instance_type_map = {
-                    "url": InstanceType.URL,
-                    "hostname": InstanceType.HOSTNAME,
-                    "machine_id": InstanceType.MACHINE_ID,
-                }
-                instance_type = instance_type_map.get(serializer.validated_data["instance_type"])
-                if not instance_type:
-                    span.set_attribute("error", "invalid_instance_type")
-                    span.set_status(Status(StatusCode.ERROR, "Invalid instance type"))
-                    return Response(
-                        {"error": "Invalid instance_type"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-                command = ActivateLicenseCommand(
-                    license_key=license_key,
-                    product_slug=serializer.validated_data["product_slug"],
-                    instance_identifier=serializer.validated_data["instance_identifier"],
-                    instance_type=instance_type,
-                    instance_metadata=serializer.validated_data.get("instance_metadata", {}),
-                )
-
-                result = await handler.handle(command)
-
-                response_serializer = ActivateLicenseResponseSerializer(result)
-                span.set_attribute("activation.id", str(result.activation_id))
-                span.set_attribute("license.id", str(result.license_id))
-                span.set_status(Status(StatusCode.OK))
-
-                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-
-            except DomainException as e:
-                span.set_attribute("error", "domain_exception")
-                span.set_attribute("error.type", type(e).__name__)
-                span.set_attribute("error.message", str(e))
-                if hasattr(e, "code"):
-                    span.set_attribute("error.code", str(e.code))
-                import traceback
-
-                try:
-                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-                    if len(tb_str) > 5000:
-                        tb_str = tb_str[:5000] + "... (truncated)"
-                    span.set_attribute("error.stack_trace", tb_str)
-                except Exception:
-                    pass
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except (ValidationError, IntegrityError) as e:
-                span.set_attribute("error", "conflict")
-                span.set_attribute("error.message", str(e))
-                span.set_status(Status(StatusCode.ERROR, str(e)))
+            # Map instance type string to enum
+            instance_type_map = {
+                "url": InstanceType.URL,
+                "hostname": InstanceType.HOSTNAME,
+                "machine_id": InstanceType.MACHINE_ID,
+            }
+            instance_type = instance_type_map.get(serializer.validated_data["instance_type"])
+            if not instance_type:
+                span.set_attribute("error", "invalid_instance_type")
+                span.set_status(Status(StatusCode.ERROR, "Invalid instance type"))
                 return Response(
-                    {"error": "Activation with this License and Instance identifier already exists."},
-                    status=status.HTTP_409_CONFLICT,
+                    {"error": "Invalid instance_type"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
-            except ValueError as e:
-                span.set_attribute("error", "validation_error")
-                span.set_attribute("error.message", str(e))
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                
-                # Determine appropriate status code based on error message
-                status_code = status.HTTP_400_BAD_REQUEST
-                if "already activated" in str(e).lower() or "seat limit exceeded" in str(e).lower():
-                    status_code = status.HTTP_409_CONFLICT
-                elif "expired" in str(e).lower() or "suspended" in str(e).lower() or "cancelled" in str(e).lower():
-                    status_code = status.HTTP_403_FORBIDDEN
-                    
-                return Response({"error": str(e)}, status=status_code)
-            except Exception as e:
-                span.set_attribute("error", "internal_error")
-                span.set_attribute("error.type", type(e).__name__)
-                span.set_attribute("error.message", str(e))
-                import traceback
 
-                try:
-                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-                    if len(tb_str) > 10000:
-                        tb_str = tb_str[:10000] + "... (truncated)"
-                    span.set_attribute("error.stack_trace", tb_str)
-                except Exception:
-                    pass
+            command = ActivateLicenseCommand(
+                license_key=license_key,
+                product_slug=serializer.validated_data["product_slug"],
+                instance_identifier=serializer.validated_data["instance_identifier"],
+                instance_type=instance_type,
+                instance_metadata=serializer.validated_data.get("instance_metadata", {}),
+            )
 
-                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
-                return Response(
-                    {"error": "Internal server error"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
+            result = await handler.handle(command)
+
+            response_serializer = ActivateLicenseResponseSerializer(result)
+            span.set_attribute("activation.id", str(result.activation_id))
+            span.set_attribute("license.id", str(result.license_id))
+            span.set_status(Status(StatusCode.OK))
+
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
 
 class GetLicenseStatusView(APIView):
@@ -265,48 +206,24 @@ class GetLicenseStatusView(APIView):
             if instance_identifier:
                 span.set_attribute("instance_identifier", instance_identifier)
 
-            try:
-                handler = GetLicenseStatusHandler(
-                    license_key_repository=_license_key_repo,
-                    license_repository=_license_repo,
-                    product_repository=_product_repo,
-                    activation_repository=_activation_repo,
-                )
+            handler = GetLicenseStatusHandler(
+                license_key_repository=_license_key_repo,
+                license_repository=_license_repo,
+                product_repository=_product_repo,
+                activation_repository=_activation_repo,
+            )
 
-                query = GetLicenseStatusQuery(license_key=license_key)
+            query = GetLicenseStatusQuery(license_key=license_key)
 
-                result = await handler.handle(query)
+            result = await handler.handle(query)
 
-                serializer = LicenseStatusResponseSerializer(result)
-                span.set_attribute("status", result.status)
-                span.set_attribute("is_valid", str(result.is_valid))
-                span.set_attribute("licenses.count", len(result.licenses))
-                span.set_status(Status(StatusCode.OK))
+            serializer = LicenseStatusResponseSerializer(result)
+            span.set_attribute("status", result.status)
+            span.set_attribute("is_valid", str(result.is_valid))
+            span.set_attribute("licenses.count", len(result.licenses))
+            span.set_status(Status(StatusCode.OK))
 
-                return Response(serializer.data, status=status.HTTP_200_OK)
-
-            except DomainException as e:
-                span.set_attribute("error", "domain_exception")
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception as e:
-                span.set_attribute("error", "internal_error")
-                span.set_attribute("error.type", type(e).__name__)
-                span.set_attribute("error.message", str(e))
-                import traceback
-
-                try:
-                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-                    if len(tb_str) > 10000:
-                        tb_str = tb_str[:10000] + "... (truncated)"
-                    span.set_attribute("error.stack_trace", tb_str)
-                except Exception:
-                    pass
-                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
-                return Response(
-                    {"error": "Internal server error"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class DeactivateSeatView(APIView):
@@ -350,82 +267,60 @@ class DeactivateSeatView(APIView):
             license_key = license_key_obj.key
             span.set_attribute("license_key", license_key)
 
-            try:
-                # Find activation directly by ID
-                activation = await _activation_repo.find_by_id(activation_id)
-                if not activation:
-                    span.set_attribute("error", "activation_not_found")
-                    span.set_status(Status(StatusCode.ERROR, "Activation not found"))
-                    return Response(
-                        {"error": "Activation not found"},
-                        status=status.HTTP_404_NOT_FOUND,
-                    )
-
-                # Verify the activation belongs to a license with the provided license key
-                from licenses.infrastructure.repositories.django_license_repository import (
-                    DjangoLicenseRepository,
+            # Find activation by ID
+            activation = await _activation_repo.find_by_id(activation_id)
+            if not activation:
+                span.set_attribute("error", "activation_not_found")
+                span.set_status(Status(StatusCode.ERROR, "Activation not found"))
+                response = Response(
+                    {"error": {"code": "ACTIVATION_NOT_FOUND", "message": "Activation not found"}},
+                    status=status.HTTP_404_NOT_FOUND,
                 )
+                if hasattr(request, 'trace_id') and request.trace_id:
+                    response["X-Trace-ID"] = request.trace_id
+                return response
 
-                license_repo = DjangoLicenseRepository()
-                license_obj = await license_repo.find_by_id(activation.license_id)
-                if not license_obj:
-                    span.set_attribute("error", "license_not_found")
-                    span.set_status(Status(StatusCode.ERROR, "License not found"))
-                    return Response(
-                        {"error": "License not found"},
-                        status=status.HTTP_404_NOT_FOUND,
-                    )
-
-                # Verify license key matches by checking if the license's license_key_id matches
-                # the provided license key
-                key_hash = hashlib.sha256(license_key.encode()).hexdigest()
-                if license_key_obj.key_hash != key_hash:
-                    span.set_attribute("error", "license_key_mismatch")
-                    span.set_status(Status(StatusCode.ERROR, "License key mismatch"))
-                    return Response(
-                        {"error": "License key does not match activation"},
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
-
-                # Verify the license belongs to this license key
-                if license_obj.license_key_id != license_key_obj.id:
-                    span.set_attribute("error", "license_key_mismatch")
-                    span.set_status(Status(StatusCode.ERROR, "License key mismatch"))
-                    return Response(
-                        {"error": "License key does not match activation"},
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
-
-                # Deactivate using SeatManager
-                from activations.domain.services import SeatManager
-
-                deactivated = await SeatManager.deactivate_seat(activation, _activation_repo)
-
-                span.set_status(Status(StatusCode.OK))
-                return Response(
-                    {"message": "Seat deactivated successfully", "status": "deactivated"},
-                    status=status.HTTP_200_OK,
+            # Verify the activation belongs to a license with the provided license key
+            license_obj = await _license_repo.find_by_id(activation.license_id)
+            if not license_obj:
+                span.set_attribute("error", "license_not_found")
+                span.set_status(Status(StatusCode.ERROR, "License not found"))
+                response = Response(
+                    {"error": {"code": "LICENSE_NOT_FOUND", "message": "License not found"}},
+                    status=status.HTTP_404_NOT_FOUND,
                 )
+                if hasattr(request, 'trace_id') and request.trace_id:
+                    response["X-Trace-ID"] = request.trace_id
+                return response
 
-            except DomainException as e:
-                span.set_attribute("error", "domain_exception")
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception as e:
-                span.set_attribute("error", "internal_error")
-                span.set_attribute("error.type", type(e).__name__)
-                span.set_attribute("error.message", str(e))
-                import traceback
-
-                try:
-                    tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-                    if len(tb_str) > 10000:
-                        tb_str = tb_str[:10000] + "... (truncated)"
-                    span.set_attribute("error.stack_trace", tb_str)
-                except Exception:
-                    pass
-                span.set_status(Status(StatusCode.ERROR, "Internal server error"))
-                return Response(
-                    {"error": "Internal server error"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            # Verify license belongs to this license key
+            if license_obj.license_key_id != license_key_obj.id:
+                span.set_attribute("error", "license_key_mismatch")
+                span.set_status(Status(StatusCode.ERROR, "License key mismatch"))
+                response = Response(
+                    {"error": {"code": "FORBIDDEN", "message": "License key does not match activation"}},
+                    status=status.HTTP_403_FORBIDDEN,
                 )
+                if hasattr(request, 'trace_id') and request.trace_id:
+                    response["X-Trace-ID"] = request.trace_id
+                return response
+
+            handler = DeactivateSeatHandler(
+                license_key_repository=_license_key_repo,
+                activation_repository=_activation_repo,
+            )
+
+            command = DeactivateSeatCommand(
+                license_key=license_key,
+                instance_identifier=activation.instance_identifier,
+            )
+
+            span.set_attribute("instance_identifier", activation.instance_identifier)
+
+            await handler.handle(command)
+
+            span.set_status(Status(StatusCode.OK))
+            return Response(
+                {"message": "Seat deactivated successfully", "status": "deactivated"},
+                status=status.HTTP_200_OK,
+            )

@@ -59,7 +59,7 @@ class TestProductAPI:
             "instance_identifier": "https://example.com",
             "instance_type": "url",
         }
-        
+
         # First activation
         api_client.post(
             url,
@@ -75,11 +75,11 @@ class TestProductAPI:
             HTTP_X_LICENSE_KEY=license_key_obj.key,
             format="json",
         )
-        
+
         # Currently expecting 500, but goal is 409
         if response.status_code == 500:
-             pytest.fail("Duplicate activation caused 500 Internal Server Error")
-        
+            pytest.fail("Duplicate activation caused 500 Internal Server Error")
+
         # After fix, we expect 409 Conflict
         assert response.status_code in [409, 400]
 

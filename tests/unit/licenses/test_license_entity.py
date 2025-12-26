@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from core.domain.exceptions import InvalidLicenseStatusError
 from core.domain.value_objects import LicenseStatus
 from licenses.domain.license import License
 
@@ -113,7 +114,7 @@ class TestLicenseEntity:
         )
 
         past_date = datetime.now(timezone.utc) - timedelta(days=1)
-        with pytest.raises(ValueError, match="cannot be in the past"):
+        with pytest.raises(InvalidLicenseStatusError, match="Expiration date cannot be in the past"):
             license.renew(past_date)
 
     def test_suspend_license(self):
@@ -136,7 +137,7 @@ class TestLicenseEntity:
         )
         cancelled = license.cancel()
 
-        with pytest.raises(ValueError, match="Cannot suspend"):
+        with pytest.raises(InvalidLicenseStatusError, match="Cannot suspend a cancelled license"):
             cancelled.suspend()
 
     def test_resume_license(self):
@@ -159,7 +160,7 @@ class TestLicenseEntity:
             product_id=uuid.uuid4(),
         )
 
-        with pytest.raises(ValueError, match="Can only resume"):
+        with pytest.raises(InvalidLicenseStatusError, match="Can only resume a suspended license"):
             license.resume()
 
     def test_cancel_license(self):
