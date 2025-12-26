@@ -1,0 +1,4 @@
+"""
+License command DTOs.
+"""
+
