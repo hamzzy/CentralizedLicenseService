@@ -6,54 +6,38 @@ These endpoints are used by end-user products to:
 - Check license status
 - Deactivate seats
 """
+
 import uuid
 
-from core.domain.value_objects import InstanceType
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from activations.application.commands.activate_license import (
-    ActivateLicenseCommand,
-)
-from activations.application.commands.deactivate_seat import (
-    DeactivateSeatCommand,
-)
-from activations.application.handlers.activate_license_handler import (
-    ActivateLicenseHandler,
-)
-from activations.application.handlers.deactivate_seat_handler import (
-    DeactivateSeatHandler,
-)
-from api.exceptions import APIError
-from brands.infrastructure.repositories.django_product_repository import (
-    DjangoProductRepository,
-)
-from core.domain.exceptions import DomainException
-from licenses.application.handlers.get_license_status_handler import (
-    GetLicenseStatusHandler,
-)
-from licenses.application.queries.get_license_status import (
-    GetLicenseStatusQuery,
-)
-from licenses.infrastructure.repositories.django_license_key_repository import (
-    DjangoLicenseKeyRepository,
-)
-from licenses.infrastructure.repositories.django_license_repository import (
-    DjangoLicenseRepository,
-)
+from activations.application.commands.activate_license import ActivateLicenseCommand
+from activations.application.commands.deactivate_seat import DeactivateSeatCommand
+from activations.application.handlers.activate_license_handler import ActivateLicenseHandler
+from activations.application.handlers.deactivate_seat_handler import DeactivateSeatHandler
 from activations.infrastructure.repositories.django_activation_repository import (
     DjangoActivationRepository,
 )
+from api.exceptions import APIError
 from api.v1.product.serializers import (
     ActivateLicenseRequestSerializer,
     ActivateLicenseResponseSerializer,
     DeactivateSeatRequestSerializer,
     LicenseStatusResponseSerializer,
 )
-
+from brands.infrastructure.repositories.django_product_repository import DjangoProductRepository
+from core.domain.exceptions import DomainException
+from core.domain.value_objects import InstanceType
+from licenses.application.handlers.get_license_status_handler import GetLicenseStatusHandler
+from licenses.application.queries.get_license_status import GetLicenseStatusQuery
+from licenses.infrastructure.repositories.django_license_key_repository import (
+    DjangoLicenseKeyRepository,
+)
+from licenses.infrastructure.repositories.django_license_repository import DjangoLicenseRepository
 
 # Initialize repositories (in production, use DI container)
 _license_key_repo = DjangoLicenseKeyRepository()
@@ -88,9 +72,7 @@ async def activate_license(request: Request) -> Response:
     """
     serializer = ActivateLicenseRequestSerializer(data=request.data)
     if not serializer.is_valid():
-        return Response(
-            {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     # Get license key from request (set by middleware)
     license_key_obj = getattr(request, "license_key", None)
@@ -116,9 +98,7 @@ async def activate_license(request: Request) -> Response:
             "hostname": InstanceType.HOSTNAME,
             "machine_id": InstanceType.MACHINE_ID,
         }
-        instance_type = instance_type_map.get(
-            serializer.validated_data["instance_type"]
-        )
+        instance_type = instance_type_map.get(serializer.validated_data["instance_type"])
         if not instance_type:
             return Response(
                 {"error": "Invalid instance_type"},
@@ -128,26 +108,18 @@ async def activate_license(request: Request) -> Response:
         command = ActivateLicenseCommand(
             license_key=license_key,
             product_slug=serializer.validated_data["product_slug"],
-            instance_identifier=serializer.validated_data[
-                "instance_identifier"
-            ],
+            instance_identifier=serializer.validated_data["instance_identifier"],
             instance_type=instance_type,
-            instance_metadata=serializer.validated_data.get(
-                "instance_metadata", {}
-            ),
+            instance_metadata=serializer.validated_data.get("instance_metadata", {}),
         )
 
         result = await handler.handle(command)
 
         response_serializer = ActivateLicenseResponseSerializer(result)
-        return Response(
-            response_serializer.data, status=status.HTTP_201_CREATED
-        )
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
     except DomainException as e:
-        return Response(
-            {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response(
             {"error": "Internal server error"},
@@ -193,10 +165,7 @@ async def get_license_status(request: Request) -> Response:
 
     GET /api/v1/product/status?license_key={key}
     """
-    license_key = (
-        request.query_params.get("license_key")
-        or request.headers.get("X-License-Key")
-    )
+    license_key = request.query_params.get("license_key") or request.headers.get("X-License-Key")
 
     if not license_key:
         return Response(
@@ -220,9 +189,7 @@ async def get_license_status(request: Request) -> Response:
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     except DomainException as e:
-        return Response(
-            {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response(
             {"error": "Internal server error"},
@@ -246,9 +213,7 @@ async def get_license_status(request: Request) -> Response:
     },
 )
 @api_view(["DELETE"])
-async def deactivate_seat(
-    request: Request, activation_id: uuid.UUID
-) -> Response:
+async def deactivate_seat(request: Request, activation_id: uuid.UUID) -> Response:
     """
     Deactivate a seat - US5.
 
@@ -265,9 +230,8 @@ async def deactivate_seat(
     license_key = license_key_obj.key
 
     # Get instance_identifier from request body or query param
-    instance_identifier = (
-        request.data.get("instance_identifier")
-        or request.query_params.get("instance_identifier")
+    instance_identifier = request.data.get("instance_identifier") or request.query_params.get(
+        "instance_identifier"
     )
 
     if not instance_identifier:
@@ -295,12 +259,9 @@ async def deactivate_seat(
         )
 
     except DomainException as e:
-        return Response(
-            {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-

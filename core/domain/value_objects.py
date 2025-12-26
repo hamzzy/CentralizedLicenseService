@@ -4,6 +4,7 @@ Value objects for the domain.
 Value objects are immutable objects that are defined by their attributes
 rather than their identity. They have no identity and are compared by value.
 """
+
 from abc import ABC
 from dataclasses import dataclass
 from enum import Enum

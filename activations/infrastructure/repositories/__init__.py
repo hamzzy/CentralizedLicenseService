@@ -1,4 +1,3 @@
 """
 Activation infrastructure repository implementations.
 """
-

@@ -7,4 +7,3 @@ This package contains environment-specific settings:
 - test.py: Test environment settings
 - prod.py: Production environment settings
 """
-

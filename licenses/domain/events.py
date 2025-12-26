@@ -3,6 +3,7 @@ License domain events.
 
 Domain events represent something that happened in the license domain.
 """
+
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -167,4 +168,3 @@ class LicenseCancelled(DomainEvent):
             event_type="LicenseCancelled",
         )
         self.license_id = license_id
-

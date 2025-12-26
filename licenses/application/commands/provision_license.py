@@ -3,6 +3,7 @@ ProvisionLicenseCommand - US1.
 
 Command to provision a license key and licenses for a customer.
 """
+
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -24,4 +25,3 @@ class ProvisionLicenseCommand:
     products: List[uuid.UUID]  # Product IDs
     expiration_date: Optional[datetime] = None
     max_seats: int = 1  # Default seat limit per license
-

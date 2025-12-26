@@ -6,10 +6,11 @@ These endpoints are used by brand systems to:
 - Manage license lifecycle
 - Query licenses by customer email
 """
+
 import uuid
 from typing import Any
 
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
@@ -19,44 +20,6 @@ from activations.infrastructure.repositories.django_activation_repository import
     DjangoActivationRepository,
 )
 from api.exceptions import APIError
-from brands.infrastructure.repositories.django_brand_repository import (
-    DjangoBrandRepository,
-)
-from brands.infrastructure.repositories.django_product_repository import (
-    DjangoProductRepository,
-)
-from core.domain.exceptions import DomainException
-from licenses.application.commands.cancel_license import CancelLicenseCommand
-from licenses.application.commands.provision_license import (
-    ProvisionLicenseCommand,
-)
-from licenses.application.commands.renew_license import RenewLicenseCommand
-from licenses.application.commands.resume_license import ResumeLicenseCommand
-from licenses.application.commands.suspend_license import SuspendLicenseCommand
-from licenses.application.handlers.get_license_status_handler import (
-    GetLicenseStatusHandler,
-)
-from licenses.application.handlers.license_lifecycle_handlers import (
-    CancelLicenseHandler,
-    RenewLicenseHandler,
-    ResumeLicenseHandler,
-    SuspendLicenseHandler,
-)
-from licenses.application.handlers.list_licenses_by_email_handler import (
-    ListLicensesByEmailHandler,
-)
-from licenses.application.handlers.provision_license_handler import (
-    ProvisionLicenseHandler,
-)
-from licenses.application.queries.list_licenses_by_email import (
-    ListLicensesByEmailQuery,
-)
-from licenses.infrastructure.repositories.django_license_key_repository import (
-    DjangoLicenseKeyRepository,
-)
-from licenses.infrastructure.repositories.django_license_repository import (
-    DjangoLicenseRepository,
-)
 from api.v1.brand.serializers import (
     CancelLicenseRequestSerializer,
     LicenseListItemSerializer,
@@ -66,7 +29,28 @@ from api.v1.brand.serializers import (
     ResumeLicenseRequestSerializer,
     SuspendLicenseRequestSerializer,
 )
-
+from brands.infrastructure.repositories.django_brand_repository import DjangoBrandRepository
+from brands.infrastructure.repositories.django_product_repository import DjangoProductRepository
+from core.domain.exceptions import DomainException
+from licenses.application.commands.cancel_license import CancelLicenseCommand
+from licenses.application.commands.provision_license import ProvisionLicenseCommand
+from licenses.application.commands.renew_license import RenewLicenseCommand
+from licenses.application.commands.resume_license import ResumeLicenseCommand
+from licenses.application.commands.suspend_license import SuspendLicenseCommand
+from licenses.application.handlers.get_license_status_handler import GetLicenseStatusHandler
+from licenses.application.handlers.license_lifecycle_handlers import (
+    CancelLicenseHandler,
+    RenewLicenseHandler,
+    ResumeLicenseHandler,
+    SuspendLicenseHandler,
+)
+from licenses.application.handlers.list_licenses_by_email_handler import ListLicensesByEmailHandler
+from licenses.application.handlers.provision_license_handler import ProvisionLicenseHandler
+from licenses.application.queries.list_licenses_by_email import ListLicensesByEmailQuery
+from licenses.infrastructure.repositories.django_license_key_repository import (
+    DjangoLicenseKeyRepository,
+)
+from licenses.infrastructure.repositories.django_license_repository import DjangoLicenseRepository
 
 # Initialize repositories (in production, use DI container)
 _brand_repo = DjangoBrandRepository()
@@ -101,16 +85,12 @@ async def provision_license(request: Request) -> Response:
     """
     serializer = ProvisionLicenseRequestSerializer(data=request.data)
     if not serializer.is_valid():
-        return Response(
-            {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     # Get brand from request (set by middleware)
     brand = getattr(request, "brand", None)
     if not brand:
-        return Response(
-            {"error": "Brand not found"}, status=status.HTTP_401_UNAUTHORIZED
-        )
+        return Response({"error": "Brand not found"}, status=status.HTTP_401_UNAUTHORIZED)
 
     try:
         handler = ProvisionLicenseHandler(
@@ -131,14 +111,10 @@ async def provision_license(request: Request) -> Response:
         result = await handler.handle(command)
 
         response_serializer = ProvisionLicenseResponseSerializer(result)
-        return Response(
-            response_serializer.data, status=status.HTTP_201_CREATED
-        )
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
     except DomainException as e:
-        return Response(
-            {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response(
             {"error": "Internal server error"},
@@ -168,9 +144,7 @@ async def renew_license(request: Request, license_id: uuid.UUID) -> Response:
     """
     serializer = RenewLicenseRequestSerializer(data=request.data)
     if not serializer.is_valid():
-        return Response(
-            {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         handler = RenewLicenseHandler(
@@ -191,9 +165,7 @@ async def renew_license(request: Request, license_id: uuid.UUID) -> Response:
         )
 
     except DomainException as e:
-        return Response(
-            {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response(
             {"error": "Internal server error"},
@@ -223,9 +195,7 @@ async def suspend_license(request: Request, license_id: uuid.UUID) -> Response:
     """
     serializer = SuspendLicenseRequestSerializer(data=request.data)
     if not serializer.is_valid():
-        return Response(
-            {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         handler = SuspendLicenseHandler(
@@ -246,9 +216,7 @@ async def suspend_license(request: Request, license_id: uuid.UUID) -> Response:
         )
 
     except DomainException as e:
-        return Response(
-            {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response(
             {"error": "Internal server error"},
@@ -278,9 +246,7 @@ async def resume_license(request: Request, license_id: uuid.UUID) -> Response:
     """
     serializer = ResumeLicenseRequestSerializer(data=request.data)
     if not serializer.is_valid():
-        return Response(
-            {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         handler = ResumeLicenseHandler(
@@ -298,9 +264,7 @@ async def resume_license(request: Request, license_id: uuid.UUID) -> Response:
         )
 
     except DomainException as e:
-        return Response(
-            {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response(
             {"error": "Internal server error"},
@@ -330,9 +294,7 @@ async def cancel_license(request: Request, license_id: uuid.UUID) -> Response:
     """
     serializer = CancelLicenseRequestSerializer(data=request.data)
     if not serializer.is_valid():
-        return Response(
-            {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         handler = CancelLicenseHandler(
@@ -353,9 +315,7 @@ async def cancel_license(request: Request, license_id: uuid.UUID) -> Response:
         )
 
     except DomainException as e:
-        return Response(
-            {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response(
             {"error": "Internal server error"},
@@ -393,9 +353,7 @@ async def list_licenses_by_email(request: Request) -> Response:
     # Get brand from request (set by middleware)
     brand = getattr(request, "brand", None)
     if not brand:
-        return Response(
-            {"error": "Brand not found"}, status=status.HTTP_401_UNAUTHORIZED
-        )
+        return Response({"error": "Brand not found"}, status=status.HTTP_401_UNAUTHORIZED)
 
     email = request.query_params.get("email")
     if not email:
@@ -413,9 +371,7 @@ async def list_licenses_by_email(request: Request) -> Response:
             activation_repository=_activation_repo,
         )
 
-        query = ListLicensesByEmailQuery(
-            customer_email=email, brand_id=brand.id
-        )
+        query = ListLicensesByEmailQuery(customer_email=email, brand_id=brand.id)
 
         result = await handler.handle(query)
 
@@ -423,12 +379,9 @@ async def list_licenses_by_email(request: Request) -> Response:
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     except DomainException as e:
-        return Response(
-            {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-

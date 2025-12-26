@@ -4,6 +4,7 @@ In-memory event bus implementation.
 This is a simple in-memory implementation suitable for modular monolith.
 For production scale, this could be replaced with Redis, RabbitMQ, etc.
 """
+
 import asyncio
 import logging
 from typing import Dict, List, Type
@@ -70,7 +71,9 @@ class InMemoryEventBus(EventBus):
         """
         try:
             await handler.handle(event)
-            logger.debug(f"Successfully handled {event.event_type} with {handler.__class__.__name__}")
+            logger.debug(
+                f"Successfully handled {event.event_type} with {handler.__class__.__name__}"
+            )
         except Exception as e:
             logger.error(
                 f"Error handling {event.event_type} with {handler.__class__.__name__}: {e}",
@@ -82,4 +85,3 @@ class InMemoryEventBus(EventBus):
 
 # Global event bus instance
 event_bus = InMemoryEventBus()
-

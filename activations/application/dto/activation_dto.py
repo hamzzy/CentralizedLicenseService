@@ -1,6 +1,7 @@
 """
 Activation DTOs for API responses.
 """
+
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -39,4 +40,3 @@ class ActivationStatusDTO:
     activation_id: Optional[uuid.UUID]
     activated_at: Optional[datetime]
     instance_identifier: str
-

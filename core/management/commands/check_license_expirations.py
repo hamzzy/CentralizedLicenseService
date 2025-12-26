@@ -3,16 +3,15 @@ Django management command to check and mark expired licenses.
 
 This command should be run periodically (e.g., via cron or scheduled task).
 """
+
 import logging
 from datetime import datetime
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from licenses.infrastructure.repositories.django_license_repository import (
-    DjangoLicenseRepository,
-)
 from licenses.infrastructure.models import License as LicenseModel
+from licenses.infrastructure.repositories.django_license_repository import DjangoLicenseRepository
 
 logger = logging.getLogger(__name__)
 
@@ -37,21 +36,15 @@ class Command(BaseCommand):
 
         # Find licenses that are expired but still marked as valid
         now = timezone.now()
-        expired_licenses = LicenseModel.objects.filter(
-            status="valid", expires_at__lt=now
-        )
+        expired_licenses = LicenseModel.objects.filter(status="valid", expires_at__lt=now)
 
         count = expired_licenses.count()
         self.stdout.write(f"Found {count} expired license(s)")
 
         if dry_run:
-            self.stdout.write(
-                self.style.WARNING("DRY RUN - No changes will be made")
-            )
+            self.stdout.write(self.style.WARNING("DRY RUN - No changes will be made"))
             for license in expired_licenses[:10]:  # Show first 10
-                self.stdout.write(
-                    f"  - License {license.id} expired at {license.expires_at}"
-                )
+                self.stdout.write(f"  - License {license.id} expired at {license.expires_at}")
             return
 
         # Mark licenses as expired
@@ -68,9 +61,7 @@ class Command(BaseCommand):
                     # Save (async)
                     await repository.save(expired_entity)
                     updated += 1
-                    logger.info(
-                        f"Marked license {license_model.id} as expired"
-                    )
+                    logger.info(f"Marked license {license_model.id} as expired")
                 except Exception as e:
                     logger.error(
                         f"Error marking license {license_model.id} as expired: {e}",
@@ -83,4 +74,3 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(f"Successfully marked {updated} license(s) as expired")
         )
-

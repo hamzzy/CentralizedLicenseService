@@ -4,9 +4,10 @@ Activation repository port (interface).
 This defines the contract for activation persistence operations.
 Implementations are in the infrastructure layer.
 """
+
+import uuid
 from abc import ABC, abstractmethod
 from typing import List, Optional
-import uuid
 
 from activations.domain.activation import Activation
 
@@ -33,9 +34,7 @@ class ActivationRepository(ABC):
         pass
 
     @abstractmethod
-    async def find_by_id(
-        self, activation_id: uuid.UUID
-    ) -> Optional[Activation]:
+    async def find_by_id(self, activation_id: uuid.UUID) -> Optional[Activation]:
         """
         Find an activation by ID.
 
@@ -64,9 +63,7 @@ class ActivationRepository(ABC):
         pass
 
     @abstractmethod
-    async def find_active_by_license(
-        self, license_id: uuid.UUID
-    ) -> List[Activation]:
+    async def find_active_by_license(self, license_id: uuid.UUID) -> List[Activation]:
         """
         Find all active activations for a license.
 
@@ -79,9 +76,7 @@ class ActivationRepository(ABC):
         pass
 
     @abstractmethod
-    async def find_all_by_license(
-        self, license_id: uuid.UUID
-    ) -> List[Activation]:
+    async def find_all_by_license(self, license_id: uuid.UUID) -> List[Activation]:
         """
         Find all activations for a license (active and inactive).
 
@@ -105,4 +100,3 @@ class ActivationRepository(ABC):
             True if activation exists, False otherwise
         """
         pass
-

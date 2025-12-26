@@ -3,6 +3,7 @@ ActivateLicenseCommand - US3.
 
 Command to activate a license for a specific instance.
 """
+
 from dataclasses import dataclass
 from typing import Dict, Optional
 
@@ -18,4 +19,3 @@ class ActivateLicenseCommand:
     instance_identifier: str
     instance_type: InstanceType
     instance_metadata: Optional[Dict] = None
-

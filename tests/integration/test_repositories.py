@@ -1,17 +1,18 @@
 """
 Integration tests for repository implementations.
 """
+
 import uuid
 from datetime import datetime, timedelta
 
 import pytest
 
+from activations.domain.activation import Activation
 from brands.domain.brand import Brand
 from brands.domain.product import Product
+from core.domain.value_objects import InstanceType
 from licenses.domain.license import License
 from licenses.domain.license_key import LicenseKey
-from activations.domain.activation import Activation
-from core.domain.value_objects import InstanceType
 
 
 @pytest.mark.django_db
@@ -103,9 +104,7 @@ class TestLicenseRepository:
         )
         await license_repository.save(license1)
 
-        licenses = await license_repository.find_by_license_key(
-            db_license_key.id
-        )
+        licenses = await license_repository.find_by_license_key(db_license_key.id)
         assert len(licenses) >= 1
 
 
@@ -115,9 +114,7 @@ class TestActivationRepository:
     """Integration tests for ActivationRepository."""
 
     @pytest.mark.asyncio
-    async def test_save_and_find(
-        self, activation_repository, db_license
-    ):
+    async def test_save_and_find(self, activation_repository, db_license):
         """Test saving and finding an activation."""
         activation = Activation.create(
             license_id=db_license.id,
@@ -133,9 +130,7 @@ class TestActivationRepository:
         assert found.instance_identifier.value == "https://test.com"
 
     @pytest.mark.asyncio
-    async def test_find_by_license(
-        self, activation_repository, db_license
-    ):
+    async def test_find_by_license(self, activation_repository, db_license):
         """Test finding activations by license."""
         activation1 = Activation.create(
             license_id=db_license.id,
@@ -151,15 +146,11 @@ class TestActivationRepository:
         await activation_repository.save(activation1)
         await activation_repository.save(activation2)
 
-        activations = await activation_repository.find_by_license(
-            db_license.id
-        )
+        activations = await activation_repository.find_by_license(db_license.id)
         assert len(activations) >= 2
 
     @pytest.mark.asyncio
-    async def test_find_by_instance(
-        self, activation_repository, db_license
-    ):
+    async def test_find_by_instance(self, activation_repository, db_license):
         """Test finding activation by instance identifier."""
         activation = Activation.create(
             license_id=db_license.id,
@@ -168,9 +159,6 @@ class TestActivationRepository:
         )
         await activation_repository.save(activation)
 
-        found = await activation_repository.find_by_instance(
-            db_license.id, "https://unique.com"
-        )
+        found = await activation_repository.find_by_instance(db_license.id, "https://unique.com")
         assert found is not None
         assert found.instance_identifier.value == "https://unique.com"
-

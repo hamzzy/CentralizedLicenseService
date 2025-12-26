@@ -1,13 +1,14 @@
 """
 Integration tests for Brand API endpoints.
 """
+
 import uuid
 from datetime import datetime, timedelta
 
 import pytest
 from django.urls import reverse
 
-from brands.infrastructure.models import Brand, ApiKey
+from brands.infrastructure.models import ApiKey, Brand
 
 
 @pytest.mark.django_db
@@ -24,8 +25,8 @@ class TestBrandAPI:
             prefix="RM",
         )
         # Create API key and capture raw key
-        import secrets
         import hashlib
+        import secrets
 
         raw_key = secrets.token_urlsafe(32)
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
@@ -50,9 +51,7 @@ class TestBrandAPI:
             {
                 "customer_email": "test@example.com",
                 "products": [str(product.id)],
-                "expiration_date": (
-                    datetime.utcnow() + timedelta(days=365)
-                ).isoformat(),
+                "expiration_date": (datetime.utcnow() + timedelta(days=365)).isoformat(),
                 "max_seats": 5,
             },
             HTTP_X_API_KEY=raw_key,
@@ -81,8 +80,8 @@ class TestBrandAPI:
     def test_renew_license_success(self, api_client, db_license):
         """Test successful license renewal via API."""
         # Get brand and create API key
-        import secrets
         import hashlib
+        import secrets
 
         from licenses.infrastructure.models import License
 
@@ -97,9 +96,7 @@ class TestBrandAPI:
         )
 
         new_expiration = datetime.utcnow() + timedelta(days=730)
-        url = reverse(
-            "api:v1:brand:renew-license", kwargs={"license_id": db_license.id}
-        )
+        url = reverse("api:v1:brand:renew-license", kwargs={"license_id": db_license.id})
         response = api_client.post(
             url,
             {"expiration_date": new_expiration.isoformat()},
@@ -112,8 +109,8 @@ class TestBrandAPI:
 
     def test_suspend_license_success(self, api_client, db_license):
         """Test successful license suspension via API."""
-        import secrets
         import hashlib
+        import secrets
 
         from licenses.infrastructure.models import License
 
@@ -139,8 +136,8 @@ class TestBrandAPI:
 
     def test_list_licenses_by_email(self, api_client, db_license):
         """Test listing licenses by customer email."""
-        import secrets
         import hashlib
+        import secrets
 
         from licenses.infrastructure.models import License
 
@@ -165,4 +162,3 @@ class TestBrandAPI:
         data = response.json()
         assert "licenses" in data
         assert len(data["licenses"]) >= 1
-

@@ -4,9 +4,10 @@ License repository port (interface).
 This defines the contract for license persistence operations.
 Implementations are in the infrastructure layer.
 """
+
+import uuid
 from abc import ABC, abstractmethod
 from typing import List, Optional
-import uuid
 
 from licenses.domain.license import License
 
@@ -46,9 +47,7 @@ class LicenseRepository(ABC):
         pass
 
     @abstractmethod
-    async def find_by_license_key(
-        self, license_key_id: uuid.UUID
-    ) -> List[License]:
+    async def find_by_license_key(self, license_key_id: uuid.UUID) -> List[License]:
         """
         Find all licenses for a license key.
 
@@ -88,4 +87,3 @@ class LicenseRepository(ABC):
             True if license exists, False otherwise
         """
         pass
-

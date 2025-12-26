@@ -4,9 +4,10 @@ License domain services.
 Domain services contain business logic that doesn't naturally
 fit within a single entity.
 """
+
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from brands.ports.brand_repository import BrandRepository
 from licenses.domain.license import License
@@ -36,7 +37,7 @@ class LicenseValidator:
     """Domain service for license validation."""
 
     @staticmethod
-    def validate_license(license: License) -> tuple[bool, Optional[str]]:
+    def validate_license(license: License) -> Tuple[bool, Optional[str]]:
         """
         Validate a license.
 
@@ -58,9 +59,7 @@ class LicenseValidator:
         return True, None
 
     @staticmethod
-    def can_activate(
-        license: License, seats_used: int
-    ) -> tuple[bool, Optional[str]]:
+    def can_activate(license: License, seats_used: int) -> Tuple[bool, Optional[str]]:
         """
         Check if a license can be activated.
 
@@ -157,4 +156,3 @@ class LicenseLifecycleManager:
         """
         cancelled = license.cancel()
         return await repository.save(cancelled)
-

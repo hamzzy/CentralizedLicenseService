@@ -1,19 +1,16 @@
 """
 Unit tests for ProvisionLicenseHandler.
 """
+
 import uuid
 from datetime import datetime, timedelta
 
 import pytest
 
 from brands.domain.product import Product
-from licenses.application.commands.provision_license import (
-    ProvisionLicenseCommand,
-)
-from licenses.application.handlers.provision_license_handler import (
-    ProvisionLicenseHandler,
-)
 from core.domain.exceptions import BrandNotFoundError
+from licenses.application.commands.provision_license import ProvisionLicenseCommand
+from licenses.application.handlers.provision_license_handler import ProvisionLicenseHandler
 
 
 @pytest.mark.asyncio

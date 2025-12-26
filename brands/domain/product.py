@@ -4,6 +4,7 @@ Product domain entity.
 This is the core domain entity representing a product.
 It contains business logic and is independent of infrastructure.
 """
+
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -85,4 +86,3 @@ class Product:
             created_at=self.created_at,
             updated_at=datetime.utcnow(),
         )
-

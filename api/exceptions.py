@@ -3,6 +3,7 @@ API exception handlers.
 
 This module provides custom exception handling for REST API responses.
 """
+
 import logging
 from typing import Any, Dict
 
@@ -134,4 +135,3 @@ def custom_exception_handler(exc: Exception, context: Dict[str, Any]) -> Respons
         },
         status=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
-

@@ -1,6 +1,7 @@
 """
 URL configuration for brand API endpoints.
 """
+
 from django.urls import path
 
 from api.v1.brand import views
@@ -33,4 +34,3 @@ urlpatterns = [
     ),
     path("licenses", views.list_licenses_by_email, name="list-licenses"),
 ]
-

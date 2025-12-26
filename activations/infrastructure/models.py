@@ -4,6 +4,7 @@ Activation Django ORM model.
 This is the infrastructure layer model for activations.
 Domain entities are in activations.domain.activation.
 """
+
 import uuid
 
 from django.db import models
@@ -15,17 +16,13 @@ class Activation(models.Model):
     Consumes a seat from the license.
     """
 
-    id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     license = models.ForeignKey(
         "licenses.License",
         on_delete=models.CASCADE,
         related_name="activations",
     )
-    instance_identifier = models.CharField(
-        max_length=500, help_text="URL, hostname, or machine ID"
-    )
+    instance_identifier = models.CharField(max_length=500, help_text="URL, hostname, or machine ID")
     instance_metadata = models.JSONField(
         default=dict,
         blank=True,
@@ -43,18 +40,14 @@ class Activation(models.Model):
         indexes = [
             models.Index(fields=["license", "instance_identifier"]),
             models.Index(fields=["license", "is_active"]),
-            models.Index(
-                fields=["license", "is_active", "activated_at"]
-            ),
+            models.Index(fields=["license", "is_active", "activated_at"]),
         ]
 
     def clean(self):
         """Validate activation fields."""
         from django.core.exceptions import ValidationError
 
-        if not self.instance_identifier or len(
-            self.instance_identifier.strip()
-        ) == 0:
+        if not self.instance_identifier or len(self.instance_identifier.strip()) == 0:
             raise ValidationError("Instance identifier cannot be empty")
         if len(self.instance_identifier) > 500:
             raise ValidationError("Instance identifier too long")
@@ -75,8 +68,4 @@ class Activation(models.Model):
         self.save()
 
     def __str__(self):
-        return (
-            f"{self.license.license_key.key} @ "
-            f"{self.instance_identifier}"
-        )
-
+        return f"{self.license.license_key.key} @ " f"{self.instance_identifier}"

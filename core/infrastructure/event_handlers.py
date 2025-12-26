@@ -4,6 +4,7 @@ Event handlers for domain events.
 These handlers process domain events asynchronously for side effects
 like audit logging, notifications, cache invalidation, etc.
 """
+
 import logging
 from typing import Dict
 
@@ -66,9 +67,7 @@ class LicenseCacheInvalidationHandler(EventHandler):
         Args:
             event: Domain event
         """
-        from licenses.application.services.license_cache_service import (
-            LicenseCacheService,
-        )
+        from licenses.application.services.license_cache_service import LicenseCacheService
 
         # Invalidate cache for license lifecycle events
         event_types = [
@@ -85,9 +84,7 @@ class LicenseCacheInvalidationHandler(EventHandler):
         if isinstance(event, tuple(event_types)):
             # Get license key from event
             # For now, log - full implementation would fetch license_key
-            logger.debug(
-                f"Cache invalidation needed for event: {event.event_type}"
-            )
+            logger.debug(f"Cache invalidation needed for event: {event.event_type}")
             # TODO: Implement full cache invalidation based on event
 
 
@@ -143,4 +140,3 @@ def register_event_handlers():
         event_bus.subscribe(SeatDeactivated, cache_handler)
 
     logger.info("Event handlers registered")
-

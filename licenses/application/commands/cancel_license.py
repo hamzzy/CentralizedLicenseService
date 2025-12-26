@@ -3,6 +3,7 @@ CancelLicenseCommand - US2.
 
 Command to cancel a license.
 """
+
 import uuid
 from dataclasses import dataclass
 from typing import Optional
@@ -14,4 +15,3 @@ class CancelLicenseCommand:
 
     license_id: uuid.UUID
     reason: Optional[str] = None
-

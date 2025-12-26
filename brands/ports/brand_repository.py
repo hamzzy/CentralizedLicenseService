@@ -4,9 +4,10 @@ Brand repository port (interface).
 This defines the contract for brand persistence operations.
 Implementations are in the infrastructure layer.
 """
+
+import uuid
 from abc import ABC, abstractmethod
 from typing import List, Optional
-import uuid
 
 from brands.domain.brand import Brand
 
@@ -93,4 +94,3 @@ class BrandRepository(ABC):
             List of Brand entities
         """
         pass
-

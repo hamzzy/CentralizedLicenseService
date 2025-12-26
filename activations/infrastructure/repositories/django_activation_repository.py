@@ -3,15 +3,14 @@ Django implementation of ActivationRepository port.
 
 This adapter converts between domain entities and Django ORM models.
 """
+
 import uuid
 from typing import List, Optional
 
 from asgiref.sync import sync_to_async
 
 from activations.domain.activation import Activation
-from activations.infrastructure.models import (
-    Activation as ActivationModel,
-)
+from activations.infrastructure.models import Activation as ActivationModel
 from activations.ports.activation_repository import ActivationRepository
 from core.domain.value_objects import InstanceIdentifier, InstanceType
 
@@ -49,9 +48,7 @@ class DjangoActivationRepository(ActivationRepository):
         return Activation(
             id=model.id,
             license_id=model.license_id,
-            instance_identifier=InstanceIdentifier(
-                model.instance_identifier, instance_type
-            ),
+            instance_identifier=InstanceIdentifier(model.instance_identifier, instance_type),
             instance_metadata=model.instance_metadata or {},
             activated_at=model.activated_at,
             last_checked_at=model.last_checked_at,
@@ -77,9 +74,7 @@ class DjangoActivationRepository(ActivationRepository):
             id=activation.id,
             defaults={
                 "license_id": activation.license_id,
-                "instance_identifier": str(
-                    activation.instance_identifier
-                ),
+                "instance_identifier": str(activation.instance_identifier),
                 "instance_metadata": metadata,
                 "activated_at": activation.activated_at,
                 "last_checked_at": activation.last_checked_at,
@@ -112,9 +107,7 @@ class DjangoActivationRepository(ActivationRepository):
         return self._to_domain(model)
 
     @sync_to_async
-    def find_by_id(
-        self, activation_id: uuid.UUID
-    ) -> Optional[Activation]:
+    def find_by_id(self, activation_id: uuid.UUID) -> Optional[Activation]:
         """
         Find an activation by ID.
 
@@ -154,9 +147,7 @@ class DjangoActivationRepository(ActivationRepository):
             return None
 
     @sync_to_async
-    def find_active_by_license(
-        self, license_id: uuid.UUID
-    ) -> List[Activation]:
+    def find_active_by_license(self, license_id: uuid.UUID) -> List[Activation]:
         """
         Find all active activations for a license.
 
@@ -166,15 +157,11 @@ class DjangoActivationRepository(ActivationRepository):
         Returns:
             List of active Activation entities
         """
-        models = ActivationModel.objects.filter(
-            license_id=license_id, is_active=True
-        )
+        models = ActivationModel.objects.filter(license_id=license_id, is_active=True)
         return [self._to_domain(model) for model in models]
 
     @sync_to_async
-    def find_all_by_license(
-        self, license_id: uuid.UUID
-    ) -> List[Activation]:
+    def find_all_by_license(self, license_id: uuid.UUID) -> List[Activation]:
         """
         Find all activations for a license (active and inactive).
 
@@ -199,4 +186,3 @@ class DjangoActivationRepository(ActivationRepository):
             True if activation exists, False otherwise
         """
         return ActivationModel.objects.filter(id=activation_id).exists()
-

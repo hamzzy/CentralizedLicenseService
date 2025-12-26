@@ -1,6 +1,7 @@
 """
 Unit tests for License domain entity.
 """
+
 import uuid
 from datetime import datetime, timedelta
 
@@ -181,4 +182,3 @@ class TestLicenseEntity:
                 product_id=uuid.uuid4(),
                 seat_limit=0,
             )
-

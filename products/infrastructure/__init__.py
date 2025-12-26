@@ -1,4 +1,3 @@
 """
 Product infrastructure implementations.
 """
-

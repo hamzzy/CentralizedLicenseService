@@ -4,6 +4,7 @@ Activation domain services.
 Domain services contain business logic that doesn't naturally
 fit within a single entity.
 """
+
 import uuid
 from typing import Optional
 
@@ -49,9 +50,7 @@ class SeatManager:
         Returns:
             True if seats are available, False otherwise
         """
-        active_count = await SeatManager.count_active_seats(
-            license.id, repository
-        )
+        active_count = await SeatManager.count_active_seats(license.id, repository)
         return active_count < license.seat_limit
 
     @staticmethod
@@ -82,16 +81,12 @@ class SeatManager:
             return False, "License is not valid"
 
         # Check if instance is already activated
-        existing = await repository.find_by_license_and_instance(
-            license.id, instance_identifier
-        )
+        existing = await repository.find_by_license_and_instance(license.id, instance_identifier)
         if existing and existing.is_active:
             return False, "Instance already activated"
 
         # Check seat availability
-        has_seats = await SeatManager.has_available_seats(
-            license, repository
-        )
+        has_seats = await SeatManager.has_available_seats(license, repository)
         if not has_seats:
             return False, "License seat limit exceeded"
 
@@ -157,4 +152,3 @@ class SeatManager:
         """
         deactivated = activation.deactivate()
         return await repository.save(deactivated)
-

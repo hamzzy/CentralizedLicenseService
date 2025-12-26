@@ -3,18 +3,15 @@ GetLicenseStatusHandler - US4.
 
 Handler for getting license status query.
 """
+
 import hashlib
 
 from activations.ports.activation_repository import ActivationRepository
 from brands.ports.product_repository import ProductRepository
 from core.domain.exceptions import InvalidLicenseKeyError
 from licenses.application.dto.license_dto import LicenseDTO, LicenseStatusDTO
-from licenses.application.queries.get_license_status import (
-    GetLicenseStatusQuery,
-)
-from licenses.application.services.license_cache_service import (
-    LicenseCacheService,
-)
+from licenses.application.queries.get_license_status import GetLicenseStatusQuery
+from licenses.application.services.license_cache_service import LicenseCacheService
 from licenses.ports.license_key_repository import LicenseKeyRepository
 from licenses.ports.license_repository import LicenseRepository
 
@@ -35,9 +32,7 @@ class GetLicenseStatusHandler:
         self.product_repository = product_repository
         self.activation_repository = activation_repository
 
-    async def handle(
-        self, query: GetLicenseStatusQuery
-    ) -> LicenseStatusDTO:
+    async def handle(self, query: GetLicenseStatusQuery) -> LicenseStatusDTO:
         """
         Handle get license status query.
 
@@ -51,25 +46,19 @@ class GetLicenseStatusHandler:
             InvalidLicenseKeyError: If license key not found
         """
         # Try cache first
-        cached_status = await LicenseCacheService.get_license_status(
-            query.license_key
-        )
+        cached_status = await LicenseCacheService.get_license_status(query.license_key)
         if cached_status:
             return cached_status
 
         # Find license key by key hash
         key_hash = hashlib.sha256(query.license_key.encode()).hexdigest()
-        license_key = await self.license_key_repository.find_by_key_hash(
-            key_hash
-        )
+        license_key = await self.license_key_repository.find_by_key_hash(key_hash)
 
         if not license_key:
             raise InvalidLicenseKeyError("Invalid license key")
 
         # Get all licenses for this key
-        licenses = await self.license_repository.find_by_license_key(
-            license_key.id
-        )
+        licenses = await self.license_repository.find_by_license_key(license_key.id)
 
         # Build license DTOs with seat information
         license_dtos = []
@@ -79,18 +68,12 @@ class GetLicenseStatusHandler:
 
         for license in licenses:
             # Count active seats
-            active_activations = (
-                await self.activation_repository.find_active_by_license(
-                    license.id
-                )
-            )
+            active_activations = await self.activation_repository.find_active_by_license(license.id)
             seats_used = len(active_activations)
             seats_remaining = max(0, license.seat_limit - seats_used)
 
             # Get product name
-            product = await self.product_repository.find_by_id(
-                license.product_id
-            )
+            product = await self.product_repository.find_by_id(license.product_id)
             product_name = product.name if product else "Unknown"
 
             # Check if license is valid
@@ -125,9 +108,6 @@ class GetLicenseStatusHandler:
         )
 
         # Cache the result
-        await LicenseCacheService.set_license_status(
-            query.license_key, result
-        )
+        await LicenseCacheService.set_license_status(query.license_key, result)
 
         return result
-

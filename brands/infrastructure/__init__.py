@@ -1,4 +1,3 @@
 """
 Brand infrastructure implementations.
 """
-

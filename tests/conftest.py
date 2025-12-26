@@ -1,34 +1,28 @@
 """
 Pytest configuration and shared fixtures.
 """
+
 import uuid
 from datetime import datetime, timedelta
 
 import pytest
 from django.test import override_settings
 
+from activations.domain.activation import Activation
+from activations.infrastructure.repositories.django_activation_repository import (
+    DjangoActivationRepository,
+)
 from brands.domain.brand import Brand
 from brands.domain.product import Product
-from brands.infrastructure.repositories.django_brand_repository import (
-    DjangoBrandRepository,
-)
-from brands.infrastructure.repositories.django_product_repository import (
-    DjangoProductRepository,
-)
-from core.domain.value_objects import BrandSlug, ProductSlug
+from brands.infrastructure.repositories.django_brand_repository import DjangoBrandRepository
+from brands.infrastructure.repositories.django_product_repository import DjangoProductRepository
+from core.domain.value_objects import BrandSlug, InstanceType, ProductSlug
 from licenses.domain.license import License
 from licenses.domain.license_key import LicenseKey
 from licenses.infrastructure.repositories.django_license_key_repository import (
     DjangoLicenseKeyRepository,
 )
-from licenses.infrastructure.repositories.django_license_repository import (
-    DjangoLicenseRepository,
-)
-from activations.domain.activation import Activation
-from activations.infrastructure.repositories.django_activation_repository import (
-    DjangoActivationRepository,
-)
-from core.domain.value_objects import InstanceType
+from licenses.infrastructure.repositories.django_license_repository import DjangoLicenseRepository
 
 
 @pytest.fixture
@@ -180,4 +174,3 @@ def api_client():
     from rest_framework.test import APIClient
 
     return APIClient()
-

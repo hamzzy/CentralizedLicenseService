@@ -4,6 +4,7 @@ Brand domain services.
 Domain services contain business logic that doesn't naturally
 fit within a single entity.
 """
+
 import uuid
 from typing import Optional
 
@@ -72,9 +73,7 @@ class ProductValidator:
         return True
 
     @staticmethod
-    def belongs_to_brand(
-        product: Product, brand_id: Optional[uuid.UUID]
-    ) -> bool:
+    def belongs_to_brand(product: Product, brand_id: Optional[uuid.UUID]) -> bool:
         """
         Check if product belongs to a brand.
 
@@ -88,4 +87,3 @@ class ProductValidator:
         if not brand_id:
             return False
         return product.brand_id == brand_id
-

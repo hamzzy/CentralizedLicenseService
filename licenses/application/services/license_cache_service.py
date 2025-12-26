@@ -3,6 +3,7 @@ License cache service.
 
 Provides caching for license validation and status queries.
 """
+
 import hashlib
 import json
 import logging
@@ -28,9 +29,7 @@ class LicenseCacheService:
         return f"license:status:{key_hash}"
 
     @staticmethod
-    def _license_validation_key(
-        license_key: str, product_id: str
-    ) -> str:
+    def _license_validation_key(license_key: str, product_id: str) -> str:
         """Generate cache key for license validation."""
         combined = f"{license_key}:{product_id}"
         key_hash = hashlib.sha256(combined.encode()).hexdigest()[:16]
@@ -87,11 +86,7 @@ class LicenseCacheService:
                     "seat_limit": license.seat_limit,
                     "seats_used": license.seats_used,
                     "seats_remaining": license.seats_remaining,
-                    "expires_at": (
-                        license.expires_at.isoformat()
-                        if license.expires_at
-                        else None
-                    ),
+                    "expires_at": (license.expires_at.isoformat() if license.expires_at else None),
                     "created_at": license.created_at.isoformat(),
                 }
                 for license in status.licenses
@@ -99,9 +94,7 @@ class LicenseCacheService:
             "total_seats_used": status.total_seats_used,
             "total_seats_available": status.total_seats_available,
         }
-        await cache_adapter.set(
-            cache_key, status_dict, timeout=ttl or CACHE_TTL_LICENSE_STATUS
-        )
+        await cache_adapter.set(cache_key, status_dict, timeout=ttl or CACHE_TTL_LICENSE_STATUS)
 
     @staticmethod
     async def invalidate_license_status(license_key: str) -> None:
@@ -126,4 +119,3 @@ class LicenseCacheService:
         # In production with Redis, use pattern matching
         # For now, we'll invalidate on license updates
         logger.debug(f"Invalidating cache for license key: {license_key_id}")
-

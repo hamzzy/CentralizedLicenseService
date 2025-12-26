@@ -7,4 +7,3 @@ This module handles:
 - Brand repository (port)
 - Brand infrastructure (Django ORM adapters)
 """
-

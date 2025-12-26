@@ -3,6 +3,7 @@ ProvisionLicenseHandler - US1.
 
 Handles the provision license command.
 """
+
 import hashlib
 import uuid
 
@@ -10,9 +11,7 @@ from brands.ports.brand_repository import BrandRepository
 from brands.ports.product_repository import ProductRepository
 from core.domain.exceptions import BrandNotFoundError, DomainException
 from core.infrastructure.events import event_bus
-from licenses.application.commands.provision_license import (
-    ProvisionLicenseCommand,
-)
+from licenses.application.commands.provision_license import ProvisionLicenseCommand
 from licenses.application.dto.license_dto import (
     LicenseDTO,
     LicenseKeyDTO,
@@ -41,9 +40,7 @@ class ProvisionLicenseHandler:
         self.license_key_repository = license_key_repository
         self.license_repository = license_repository
 
-    async def handle(
-        self, command: ProvisionLicenseCommand
-    ) -> ProvisionLicenseResponseDTO:
+    async def handle(self, command: ProvisionLicenseCommand) -> ProvisionLicenseResponseDTO:
         """
         Handle provision license command.
 
@@ -89,9 +86,7 @@ class ProvisionLicenseHandler:
             if not product:
                 raise DomainException(f"Product {product_id} not found")
             if product.brand_id != brand.id:
-                raise DomainException(
-                    f"Product {product_id} does not belong to brand"
-                )
+                raise DomainException(f"Product {product_id} does not belong to brand")
 
             # Create license
             license = License.create(
@@ -141,4 +136,3 @@ class ProvisionLicenseHandler:
             ),
             licenses=license_dtos,
         )
-

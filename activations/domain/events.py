@@ -3,6 +3,7 @@ Activation domain events.
 
 Domain events represent something that happened in the activation domain.
 """
+
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -71,4 +72,3 @@ class SeatDeactivated(DomainEvent):
         self.activation_id = activation_id
         self.license_id = license_id
         self.instance_identifier = instance_identifier
-

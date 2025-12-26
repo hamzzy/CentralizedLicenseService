@@ -3,6 +3,7 @@ Django implementation of BrandRepository port.
 
 This adapter converts between domain entities and Django ORM models.
 """
+
 import uuid
 from typing import List, Optional
 
@@ -161,4 +162,3 @@ class DjangoBrandRepository(BrandRepository):
         """
         models = BrandModel.objects.all()
         return [self._to_domain(model) for model in models]
-

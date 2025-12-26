@@ -3,6 +3,7 @@ SuspendLicenseCommand - US2.
 
 Command to suspend a license.
 """
+
 import uuid
 from dataclasses import dataclass
 from typing import Optional
@@ -14,4 +15,3 @@ class SuspendLicenseCommand:
 
     license_id: uuid.UUID
     reason: Optional[str] = None
-

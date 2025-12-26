@@ -3,20 +3,16 @@ DeactivateSeatHandler - US5.
 
 Handler for deactivating a seat.
 """
+
 import hashlib
 
-from activations.application.commands.deactivate_seat import (
-    DeactivateSeatCommand,
-)
+from activations.application.commands.deactivate_seat import DeactivateSeatCommand
 from activations.domain.events import SeatDeactivated
 from activations.domain.services import SeatManager
-from core.domain.exceptions import (
-    ActivationNotFoundError,
-    InvalidLicenseKeyError,
-)
+from activations.ports.activation_repository import ActivationRepository
+from core.domain.exceptions import ActivationNotFoundError, InvalidLicenseKeyError
 from core.infrastructure.events import event_bus
 from licenses.ports.license_key_repository import LicenseKeyRepository
-from activations.ports.activation_repository import ActivationRepository
 
 
 class DeactivateSeatHandler:
@@ -47,9 +43,7 @@ class DeactivateSeatHandler:
         """
         # Find license key
         key_hash = hashlib.sha256(command.license_key.encode()).hexdigest()
-        license_key = await self.license_key_repository.find_by_key_hash(
-            key_hash
-        )
+        license_key = await self.license_key_repository.find_by_key_hash(key_hash)
 
         if not license_key:
             raise InvalidLicenseKeyError("Invalid license key")
@@ -58,10 +52,10 @@ class DeactivateSeatHandler:
         # Note: This handler should receive LicenseRepository via DI
         # For now, we'll find activation directly by instance identifier
         # across all licenses for this key
-        from licenses.ports.license_repository import LicenseRepository
         from licenses.infrastructure.repositories.django_license_repository import (
             DjangoLicenseRepository,
         )
+        from licenses.ports.license_repository import LicenseRepository
 
         license_repo: LicenseRepository = DjangoLicenseRepository()
         licenses = await license_repo.find_by_license_key(license_key.id)
@@ -69,10 +63,8 @@ class DeactivateSeatHandler:
         # Find activation by license and instance
         activation = None
         for license in licenses:
-            activation = (
-                await self.activation_repository.find_by_license_and_instance(
-                    license.id, command.instance_identifier
-                )
+            activation = await self.activation_repository.find_by_license_and_instance(
+                license.id, command.instance_identifier
             )
             if activation:
                 break
@@ -83,9 +75,7 @@ class DeactivateSeatHandler:
             )
 
         # Deactivate using SeatManager
-        deactivated = await SeatManager.deactivate_seat(
-            activation, self.activation_repository
-        )
+        deactivated = await SeatManager.deactivate_seat(activation, self.activation_repository)
 
         # Publish event
         await event_bus.publish(
@@ -97,4 +87,3 @@ class DeactivateSeatHandler:
         )
 
         return deactivated
-

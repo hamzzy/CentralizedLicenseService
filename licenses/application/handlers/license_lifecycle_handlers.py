@@ -3,6 +3,7 @@ License lifecycle handlers - US2.
 
 Handlers for renew, suspend, resume, and cancel license commands.
 """
+
 import uuid
 
 from core.domain.exceptions import LicenseNotFoundError
@@ -11,9 +12,7 @@ from licenses.application.commands.cancel_license import CancelLicenseCommand
 from licenses.application.commands.renew_license import RenewLicenseCommand
 from licenses.application.commands.resume_license import ResumeLicenseCommand
 from licenses.application.commands.suspend_license import SuspendLicenseCommand
-from licenses.application.services.license_cache_service import (
-    LicenseCacheService,
-)
+from licenses.application.services.license_cache_service import LicenseCacheService
 from licenses.domain.events import (
     LicenseCancelled,
     LicenseRenewed,
@@ -52,9 +51,7 @@ class RenewLicenseHandler:
         """
         license = await self.license_repository.find_by_id(command.license_id)
         if not license:
-            raise LicenseNotFoundError(
-                f"License {command.license_id} not found"
-            )
+            raise LicenseNotFoundError(f"License {command.license_id} not found")
 
         renewed = await LicenseLifecycleManager.renew_license(
             license, command.expiration_date, self.license_repository
@@ -62,13 +59,9 @@ class RenewLicenseHandler:
 
         # Invalidate cache
         if self.license_key_repository:
-            license_key = await self.license_key_repository.find_by_id(
-                renewed.license_key_id
-            )
+            license_key = await self.license_key_repository.find_by_id(renewed.license_key_id)
             if license_key:
-                await LicenseCacheService.invalidate_license_status(
-                    license_key.key
-                )
+                await LicenseCacheService.invalidate_license_status(license_key.key)
 
         # Publish event
         await event_bus.publish(
@@ -108,23 +101,15 @@ class SuspendLicenseHandler:
         """
         license = await self.license_repository.find_by_id(command.license_id)
         if not license:
-            raise LicenseNotFoundError(
-                f"License {command.license_id} not found"
-            )
+            raise LicenseNotFoundError(f"License {command.license_id} not found")
 
-        suspended = await LicenseLifecycleManager.suspend_license(
-            license, self.license_repository
-        )
+        suspended = await LicenseLifecycleManager.suspend_license(license, self.license_repository)
 
         # Invalidate cache
         if self.license_key_repository:
-            license_key = await self.license_key_repository.find_by_id(
-                suspended.license_key_id
-            )
+            license_key = await self.license_key_repository.find_by_id(suspended.license_key_id)
             if license_key:
-                await LicenseCacheService.invalidate_license_status(
-                    license_key.key
-                )
+                await LicenseCacheService.invalidate_license_status(license_key.key)
 
         # Publish event
         await event_bus.publish(LicenseSuspended(license_id=suspended.id))
@@ -159,23 +144,15 @@ class ResumeLicenseHandler:
         """
         license = await self.license_repository.find_by_id(command.license_id)
         if not license:
-            raise LicenseNotFoundError(
-                f"License {command.license_id} not found"
-            )
+            raise LicenseNotFoundError(f"License {command.license_id} not found")
 
-        resumed = await LicenseLifecycleManager.resume_license(
-            license, self.license_repository
-        )
+        resumed = await LicenseLifecycleManager.resume_license(license, self.license_repository)
 
         # Invalidate cache
         if self.license_key_repository:
-            license_key = await self.license_key_repository.find_by_id(
-                resumed.license_key_id
-            )
+            license_key = await self.license_key_repository.find_by_id(resumed.license_key_id)
             if license_key:
-                await LicenseCacheService.invalidate_license_status(
-                    license_key.key
-                )
+                await LicenseCacheService.invalidate_license_status(license_key.key)
 
         # Publish event
         await event_bus.publish(LicenseResumed(license_id=resumed.id))
@@ -210,26 +187,17 @@ class CancelLicenseHandler:
         """
         license = await self.license_repository.find_by_id(command.license_id)
         if not license:
-            raise LicenseNotFoundError(
-                f"License {command.license_id} not found"
-            )
+            raise LicenseNotFoundError(f"License {command.license_id} not found")
 
-        cancelled = await LicenseLifecycleManager.cancel_license(
-            license, self.license_repository
-        )
+        cancelled = await LicenseLifecycleManager.cancel_license(license, self.license_repository)
 
         # Invalidate cache
         if self.license_key_repository:
-            license_key = await self.license_key_repository.find_by_id(
-                cancelled.license_key_id
-            )
+            license_key = await self.license_key_repository.find_by_id(cancelled.license_key_id)
             if license_key:
-                await LicenseCacheService.invalidate_license_status(
-                    license_key.key
-                )
+                await LicenseCacheService.invalidate_license_status(license_key.key)
 
         # Publish event
         await event_bus.publish(LicenseCancelled(license_id=cancelled.id))
 
         return cancelled
-

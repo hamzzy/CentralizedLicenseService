@@ -4,6 +4,7 @@ LicenseKey domain entity.
 This is the core domain entity representing a license key.
 It contains business logic and is independent of infrastructure.
 """
+
 import hashlib
 import secrets
 import string
@@ -104,4 +105,3 @@ class LicenseKey:
         """
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
         return secrets.compare_digest(self.key_hash, key_hash)
-

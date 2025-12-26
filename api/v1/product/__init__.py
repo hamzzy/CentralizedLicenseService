@@ -6,4 +6,3 @@ These endpoints are used by end-user products to:
 - Check license status
 - Deactivate seats
 """
-

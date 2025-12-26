@@ -1,6 +1,7 @@
 """
 License DTOs for API responses.
 """
+
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -64,4 +65,3 @@ class LicenseListItemDTO:
     expires_at: Optional[datetime]
     seats_used: int
     seat_limit: int
-

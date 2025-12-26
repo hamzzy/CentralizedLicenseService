@@ -1,12 +1,13 @@
 """
 Integration tests for Product API endpoints.
 """
+
 import uuid
 
 import pytest
 from django.urls import reverse
 
-from licenses.infrastructure.models import LicenseKey, License
+from licenses.infrastructure.models import License, LicenseKey
 
 
 @pytest.mark.django_db
@@ -18,9 +19,7 @@ class TestProductAPI:
         """Test successful license activation via API."""
         # Get license key
         license_obj = License.objects.get(id=db_license.id)
-        license_key_obj = LicenseKey.objects.get(
-            id=license_obj.license_key_id
-        )
+        license_key_obj = LicenseKey.objects.get(id=license_obj.license_key_id)
 
         url = reverse("api:v1:product:activate-license")
         response = api_client.post(
@@ -51,14 +50,10 @@ class TestProductAPI:
 
         assert response.status_code == 404
 
-    def test_check_license_status_success(
-        self, api_client, db_license
-    ):
+    def test_check_license_status_success(self, api_client, db_license):
         """Test checking license status via API."""
         license_obj = License.objects.get(id=db_license.id)
-        license_key_obj = LicenseKey.objects.get(
-            id=license_obj.license_key_id
-        )
+        license_key_obj = LicenseKey.objects.get(id=license_obj.license_key_id)
 
         url = reverse("api:v1:product:check-license")
         response = api_client.get(
@@ -87,9 +82,7 @@ class TestProductAPI:
         )
 
         license_obj = License.objects.get(id=db_license.id)
-        license_key_obj = LicenseKey.objects.get(
-            id=license_obj.license_key_id
-        )
+        license_key_obj = LicenseKey.objects.get(id=license_obj.license_key_id)
 
         url = reverse("api:v1:product:deactivate-seat")
         response = api_client.post(
@@ -107,9 +100,7 @@ class TestProductAPI:
     def test_deactivate_seat_not_found(self, api_client, db_license):
         """Test deactivating non-existent seat."""
         license_obj = License.objects.get(id=db_license.id)
-        license_key_obj = LicenseKey.objects.get(
-            id=license_obj.license_key_id
-        )
+        license_key_obj = LicenseKey.objects.get(id=license_obj.license_key_id)
 
         url = reverse("api:v1:product:deactivate-seat")
         response = api_client.post(
@@ -121,4 +112,3 @@ class TestProductAPI:
         )
 
         assert response.status_code == 404
-

@@ -1,6 +1,7 @@
 """
 Unit tests for Brand domain entity.
 """
+
 import uuid
 
 import pytest
@@ -14,9 +15,7 @@ class TestBrandEntity:
 
     def test_create_brand(self):
         """Test creating a brand entity."""
-        brand = Brand.create(
-            name="RankMath", slug="rankmath", prefix="RM"
-        )
+        brand = Brand.create(name="RankMath", slug="rankmath", prefix="RM")
 
         assert brand.name == "RankMath"
         assert brand.slug.value == "rankmath"
@@ -38,16 +37,12 @@ class TestBrandEntity:
 
     def test_brand_prefix_uppercase(self):
         """Test brand prefix is converted to uppercase."""
-        brand = Brand.create(
-            name="RankMath", slug="rankmath", prefix="rm"
-        )
+        brand = Brand.create(name="RankMath", slug="rankmath", prefix="rm")
         assert brand.prefix == "RM"
 
     def test_update_name(self):
         """Test updating brand name."""
-        brand = Brand.create(
-            name="RankMath", slug="rankmath", prefix="RM"
-        )
+        brand = Brand.create(name="RankMath", slug="rankmath", prefix="RM")
         updated = brand.update_name("RankMath Pro")
 
         assert updated.name == "RankMath Pro"
@@ -85,4 +80,3 @@ class TestBrandEntity:
         """Test invalid prefix with special characters."""
         with pytest.raises(ValueError, match="alphanumeric"):
             Brand.create(name="Test", slug="test", prefix="RM@")
-

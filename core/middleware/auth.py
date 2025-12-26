@@ -4,6 +4,7 @@ API key authentication middleware.
 This middleware validates API keys for brand integration APIs
 and license keys for product-facing APIs.
 """
+
 import hashlib
 import logging
 from typing import Callable, Optional
@@ -88,9 +89,9 @@ class APIKeyAuthenticationMiddleware(MiddlewareMixin):
         Returns:
             HttpResponse with 401 if auth fails, None if successful
         """
-        api_key = request.headers.get("X-API-Key") or request.headers.get("Authorization", "").replace(
-            "Bearer ", ""
-        )
+        api_key = request.headers.get("X-API-Key") or request.headers.get(
+            "Authorization", ""
+        ).replace("Bearer ", "")
 
         if not api_key:
             return JsonResponse(
@@ -146,7 +147,9 @@ class APIKeyAuthenticationMiddleware(MiddlewareMixin):
 
         if not license_key:
             return JsonResponse(
-                {"error": "Missing license key. Provide X-License-Key header or license_key query param."},
+                {
+                    "error": "Missing license key. Provide X-License-Key header or license_key query param."
+                },
                 status=401,
             )
 
@@ -169,4 +172,3 @@ class APIKeyAuthenticationMiddleware(MiddlewareMixin):
         except Exception as e:
             logger.error(f"Error authenticating product API: {e}", exc_info=True)
             return JsonResponse({"error": "Authentication error"}, status=500)
-

@@ -3,6 +3,7 @@ Brand domain events.
 
 Domain events represent something that happened in the brand domain.
 """
+
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -74,4 +75,3 @@ class ProductCreated(DomainEvent):
         self.brand_id = brand_id
         self.name = name
         self.slug = slug
-

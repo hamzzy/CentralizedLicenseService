@@ -1,13 +1,13 @@
 """
 Core views for health checks and system status.
 """
-from django.http import JsonResponse
-from django.views import View
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
 
 from django.core.cache import cache
 from django.db import connection
+from django.http import JsonResponse
+from django.utils.decorators import method_decorator
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -96,4 +96,3 @@ class ReadyView(View):
             return cache.get("ready_check") == "ok"
         except Exception:
             return False
-

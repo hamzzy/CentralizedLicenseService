@@ -3,6 +3,7 @@ Django management command to register event handlers.
 
 This should be called at application startup.
 """
+
 import logging
 
 from django.core.management.base import BaseCommand
@@ -20,7 +21,4 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         """Execute the command."""
         register_event_handlers()
-        self.stdout.write(
-            self.style.SUCCESS("Event handlers registered successfully")
-        )
-
+        self.stdout.write(self.style.SUCCESS("Event handlers registered successfully"))

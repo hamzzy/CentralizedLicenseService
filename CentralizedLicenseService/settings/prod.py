@@ -1,7 +1,9 @@
 """
 Production settings for CentralizedLicenseService.
 """
+
 import os
+
 from .base import *  # noqa: F403, F401
 
 DEBUG = False
@@ -55,4 +57,3 @@ LOGGING["handlers"]["file"] = {  # noqa: F405
     "formatter": "json",
 }
 LOGGING["root"]["handlers"].append("file")  # noqa: F405
-

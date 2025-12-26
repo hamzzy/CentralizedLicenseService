@@ -4,6 +4,7 @@ License domain entity.
 This is the core domain entity representing a license.
 It contains business logic and is independent of infrastructure.
 """
+
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -104,11 +105,7 @@ class License:
         if new_expiration < datetime.utcnow():
             raise ValueError("Expiration date cannot be in the past")
 
-        new_status = (
-            LicenseStatus.VALID
-            if self.status == LicenseStatus.EXPIRED
-            else self.status
-        )
+        new_status = LicenseStatus.VALID if self.status == LicenseStatus.EXPIRED else self.status
 
         return License(
             id=self.id,
@@ -198,4 +195,3 @@ class License:
             created_at=self.created_at,
             updated_at=datetime.utcnow(),
         )
-

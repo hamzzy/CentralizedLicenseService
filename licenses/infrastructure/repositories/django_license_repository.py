@@ -3,6 +3,7 @@ Django implementation of LicenseRepository port.
 
 This adapter converts between domain entities and Django ORM models.
 """
+
 import uuid
 from typing import List, Optional
 
@@ -117,9 +118,7 @@ class DjangoLicenseRepository(LicenseRepository):
             return None
 
     @sync_to_async
-    def find_by_license_key(
-        self, license_key_id: uuid.UUID
-    ) -> List[License]:
+    def find_by_license_key(self, license_key_id: uuid.UUID) -> List[License]:
         """
         Find all licenses for a license key.
 
@@ -129,9 +128,7 @@ class DjangoLicenseRepository(LicenseRepository):
         Returns:
             List of License entities
         """
-        models = LicenseModel.objects.filter(
-            license_key_id=license_key_id
-        )
+        models = LicenseModel.objects.filter(license_key_id=license_key_id)
         return [self._to_domain(model) for model in models]
 
     @sync_to_async
@@ -149,9 +146,7 @@ class DjangoLicenseRepository(LicenseRepository):
             License entity or None if not found
         """
         try:
-            model = LicenseModel.objects.get(
-                license_key_id=license_key_id, product_id=product_id
-            )
+            model = LicenseModel.objects.get(license_key_id=license_key_id, product_id=product_id)
             return self._to_domain(model)
         except LicenseModel.DoesNotExist:
             return None
@@ -168,4 +163,3 @@ class DjangoLicenseRepository(LicenseRepository):
             True if license exists, False otherwise
         """
         return LicenseModel.objects.filter(id=license_id).exists()
-

@@ -3,13 +3,13 @@ ListLicensesByEmailHandler - US6.
 
 Handler for listing licenses by customer email.
 """
+from typing import List
+
 from activations.ports.activation_repository import ActivationRepository
 from brands.ports.brand_repository import BrandRepository
 from brands.ports.product_repository import ProductRepository
 from licenses.application.dto.license_dto import LicenseListItemDTO
-from licenses.application.queries.list_licenses_by_email import (
-    ListLicensesByEmailQuery,
-)
+from licenses.application.queries.list_licenses_by_email import ListLicensesByEmailQuery
 from licenses.ports.license_key_repository import LicenseKeyRepository
 from licenses.ports.license_repository import LicenseRepository
 
@@ -32,9 +32,7 @@ class ListLicensesByEmailHandler:
         self.product_repository = product_repository
         self.activation_repository = activation_repository
 
-    async def handle(
-        self, query: ListLicensesByEmailQuery
-    ) -> list[LicenseListItemDTO]:
+    async def handle(self, query: ListLicensesByEmailQuery) -> List[LicenseListItemDTO]:
         """
         Handle list licenses by email query.
 
@@ -45,10 +43,8 @@ class ListLicensesByEmailHandler:
             List of LicenseListItemDTO
         """
         # Find license keys by email and brand
-        license_keys = (
-            await self.license_key_repository.find_by_customer_email(
-                query.brand_id, query.customer_email
-            )
+        license_keys = await self.license_key_repository.find_by_customer_email(
+            query.brand_id, query.customer_email
         )
 
         # Get brand
@@ -60,22 +56,16 @@ class ListLicensesByEmailHandler:
 
         for license_key in license_keys:
             # Get all licenses for this key
-            licenses = await self.license_repository.find_by_license_key(
-                license_key.id
-            )
+            licenses = await self.license_repository.find_by_license_key(license_key.id)
 
             for license in licenses:
                 # Get product
-                product = await self.product_repository.find_by_id(
-                    license.product_id
-                )
+                product = await self.product_repository.find_by_id(license.product_id)
                 product_name = product.name if product else "Unknown"
 
                 # Count active seats
-                active_activations = (
-                    await self.activation_repository.find_active_by_license(
-                        license.id
-                    )
+                active_activations = await self.activation_repository.find_active_by_license(
+                    license.id
                 )
                 seats_used = len(active_activations)
 
@@ -92,4 +82,3 @@ class ListLicensesByEmailHandler:
                 )
 
         return license_list
-

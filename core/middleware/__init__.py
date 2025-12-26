@@ -1,4 +1,3 @@
 """
 Custom middleware components.
 """
-

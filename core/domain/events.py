@@ -4,6 +4,7 @@ Domain events base classes and infrastructure.
 Domain events represent something that happened in the domain.
 They are used for decoupling modules and enabling event-driven architecture.
 """
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
@@ -33,9 +34,7 @@ class DomainEvent(ABC):
     def __post_init__(self):
         """Set default values if not provided."""
         object.__setattr__(self, "event_id", getattr(self, "event_id", uuid4()))
-        object.__setattr__(
-            self, "occurred_at", getattr(self, "occurred_at", datetime.utcnow())
-        )
+        object.__setattr__(self, "occurred_at", getattr(self, "occurred_at", datetime.utcnow()))
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert event to dictionary for serialization."""
@@ -90,4 +89,3 @@ class EventBus(ABC):
             handler: The handler to call when event is published
         """
         pass
-

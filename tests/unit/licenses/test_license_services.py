@@ -1,14 +1,15 @@
 """
 Unit tests for License domain services.
 """
+
 import uuid
 from datetime import datetime, timedelta
 
 import pytest
 
+from core.domain.value_objects import LicenseStatus
 from licenses.domain.license import License
 from licenses.domain.services import LicenseValidator
-from core.domain.value_objects import LicenseStatus
 
 
 class TestLicenseValidator:
@@ -106,4 +107,3 @@ class TestLicenseValidator:
 
         assert can_activate is False
         assert error is not None
-

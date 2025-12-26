@@ -1,6 +1,7 @@
 """
 Serializers for Brand API endpoints.
 """
+
 import uuid
 from datetime import datetime
 from typing import List, Optional
@@ -12,20 +13,14 @@ class ProvisionLicenseRequestSerializer(serializers.Serializer):
     """Serializer for provision license request - US1."""
 
     customer_email = serializers.EmailField(required=True)
-    products = serializers.ListField(
-        child=serializers.UUIDField(), required=True, min_length=1
-    )
+    products = serializers.ListField(child=serializers.UUIDField(), required=True, min_length=1)
     expiration_date = serializers.DateTimeField(required=False, allow_null=True)
-    max_seats = serializers.IntegerField(
-        required=False, default=1, min_value=1
-    )
+    max_seats = serializers.IntegerField(required=False, default=1, min_value=1)
 
     def validate_products(self, value):
         """Validate products list."""
         if not value or len(value) == 0:
-            raise serializers.ValidationError(
-                "At least one product is required"
-            )
+            raise serializers.ValidationError("At least one product is required")
         return value
 
 
@@ -38,9 +33,7 @@ class RenewLicenseRequestSerializer(serializers.Serializer):
 class SuspendLicenseRequestSerializer(serializers.Serializer):
     """Serializer for suspend license request - US2."""
 
-    reason = serializers.CharField(
-        required=False, allow_blank=True, max_length=500
-    )
+    reason = serializers.CharField(required=False, allow_blank=True, max_length=500)
 
 
 class ResumeLicenseRequestSerializer(serializers.Serializer):
@@ -52,9 +45,7 @@ class ResumeLicenseRequestSerializer(serializers.Serializer):
 class CancelLicenseRequestSerializer(serializers.Serializer):
     """Serializer for cancel license request - US2."""
 
-    reason = serializers.CharField(
-        required=False, allow_blank=True, max_length=500
-    )
+    reason = serializers.CharField(required=False, allow_blank=True, max_length=500)
 
 
 class LicenseDTOSerializer(serializers.Serializer):
@@ -98,4 +89,3 @@ class LicenseListItemSerializer(serializers.Serializer):
     expires_at = serializers.DateTimeField(allow_null=True)
     seats_used = serializers.IntegerField()
     seat_limit = serializers.IntegerField()
-

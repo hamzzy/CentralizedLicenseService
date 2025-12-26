@@ -1,6 +1,7 @@
 """
 Test settings for CentralizedLicenseService.
 """
+
 from .base import *  # noqa: F403, F401
 
 DEBUG = False
@@ -12,6 +13,7 @@ DATABASES = {
         "NAME": ":memory:",
     }
 }
+
 
 # Disable migrations during tests for speed
 class DisableMigrations:  # noqa: N801
@@ -38,4 +40,3 @@ PASSWORD_HASHERS = [
 
 # Disable logging during tests
 LOGGING_CONFIG = None
-

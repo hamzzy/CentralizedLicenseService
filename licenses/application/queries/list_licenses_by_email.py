@@ -3,8 +3,9 @@ ListLicensesByEmailQuery - US6.
 
 Query to list all licenses for a customer email across all brands.
 """
-from dataclasses import dataclass
+
 import uuid
+from dataclasses import dataclass
 
 
 @dataclass
@@ -17,4 +18,3 @@ class ListLicensesByEmailQuery:
 
     customer_email: str
     brand_id: uuid.UUID  # From tenant context
-

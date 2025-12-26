@@ -6,4 +6,3 @@ These endpoints are used by brand systems to:
 - Manage license lifecycle
 - Query licenses by customer email
 """
-

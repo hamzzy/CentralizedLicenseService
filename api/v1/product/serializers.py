@@ -1,6 +1,7 @@
 """
 Serializers for Product API endpoints.
 """
+
 import uuid
 from datetime import datetime
 from typing import Dict, Optional
@@ -12,23 +13,17 @@ class ActivateLicenseRequestSerializer(serializers.Serializer):
     """Serializer for activate license request - US3."""
 
     product_slug = serializers.CharField(required=True, max_length=100)
-    instance_identifier = serializers.CharField(
-        required=True, max_length=500
-    )
+    instance_identifier = serializers.CharField(required=True, max_length=500)
     instance_type = serializers.ChoiceField(
         choices=["url", "hostname", "machine_id"], required=True
     )
-    instance_metadata = serializers.DictField(
-        required=False, allow_empty=True, default=dict
-    )
+    instance_metadata = serializers.DictField(required=False, allow_empty=True, default=dict)
 
 
 class DeactivateSeatRequestSerializer(serializers.Serializer):
     """Serializer for deactivate seat request - US5."""
 
-    instance_identifier = serializers.CharField(
-        required=True, max_length=500
-    )
+    instance_identifier = serializers.CharField(required=True, max_length=500)
 
 
 class LicenseDTOSerializer(serializers.Serializer):
@@ -72,4 +67,3 @@ class ActivationStatusSerializer(serializers.Serializer):
     activation_id = serializers.UUIDField(allow_null=True)
     activated_at = serializers.DateTimeField(allow_null=True)
     instance_identifier = serializers.CharField()
-

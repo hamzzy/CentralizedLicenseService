@@ -1,6 +1,7 @@
 """
 Brand and API Key models.
 """
+
 import hashlib
 import secrets
 import uuid
@@ -16,9 +17,7 @@ class Brand(models.Model):
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(
-        max_length=255, help_text="Brand display name"
-    )
+    name = models.CharField(max_length=255, help_text="Brand display name")
     slug = models.SlugField(
         max_length=100,
         unique=True,
@@ -41,8 +40,7 @@ class Brand(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(prefix__length__gte=2)
-                & models.Q(prefix__length__lte=10),
+                check=models.Q(prefix__length__gte=2) & models.Q(prefix__length__lte=10),
                 name="prefix_length_valid",
             ),
         ]
@@ -54,13 +52,10 @@ class Brand(models.Model):
         if not self.prefix:
             raise ValidationError("Prefix is required")
         if len(self.prefix) < 2 or len(self.prefix) > 10:
-            raise ValidationError(
-                "Prefix must be between 2 and 10 characters"
-            )
+            raise ValidationError("Prefix must be between 2 and 10 characters")
         if not self.prefix.replace("-", "").replace("_", "").isalnum():
             raise ValidationError(
-                "Prefix must contain only alphanumeric characters, "
-                "hyphens, or underscores"
+                "Prefix must contain only alphanumeric characters, " "hyphens, or underscores"
             )
 
     def save(self, *args, **kwargs):
@@ -98,16 +93,10 @@ class ApiKey(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    brand = models.ForeignKey(
-        Brand, on_delete=models.CASCADE, related_name="api_keys"
-    )
+    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name="api_keys")
     key_prefix = models.CharField(max_length=8, editable=False)
-    key_hash = models.CharField(
-        max_length=64, editable=False, db_index=True
-    )
-    scope = models.CharField(
-        max_length=20, choices=SCOPE_CHOICES, default="full"
-    )
+    key_hash = models.CharField(max_length=64, editable=False, db_index=True)
+    scope = models.CharField(max_length=20, choices=SCOPE_CHOICES, default="full")
     expires_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_used_at = models.DateTimeField(null=True, blank=True)
@@ -155,9 +144,7 @@ class ApiKey(models.Model):
             True if key matches, False otherwise
         """
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
-        return secrets.compare_digest(
-            self.key_hash, key_hash
-        )
+        return secrets.compare_digest(self.key_hash, key_hash)
 
     def is_valid(self) -> bool:
         """

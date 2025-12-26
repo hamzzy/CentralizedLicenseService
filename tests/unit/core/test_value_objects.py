@@ -1,6 +1,7 @@
 """
 Unit tests for core value objects.
 """
+
 import pytest
 
 from core.domain.value_objects import (
@@ -101,9 +102,7 @@ class TestInstanceIdentifier:
 
     def test_valid_identifier(self):
         """Test valid instance identifier."""
-        identifier = InstanceIdentifier(
-            "https://example.com", InstanceType.URL
-        )
+        identifier = InstanceIdentifier("https://example.com", InstanceType.URL)
         assert str(identifier) == "https://example.com"
         assert identifier.instance_type == InstanceType.URL
 
@@ -117,4 +116,3 @@ class TestInstanceIdentifier:
         long_string = "x" * 501
         with pytest.raises(ValueError, match="too long"):
             InstanceIdentifier(long_string, InstanceType.URL)
-

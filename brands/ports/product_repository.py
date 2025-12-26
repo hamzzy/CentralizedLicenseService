@@ -4,9 +4,10 @@ Product repository port (interface).
 This defines the contract for product persistence operations.
 Implementations are in the infrastructure layer.
 """
+
+import uuid
 from abc import ABC, abstractmethod
 from typing import List, Optional
-import uuid
 
 from brands.domain.product import Product
 
@@ -46,9 +47,7 @@ class ProductRepository(ABC):
         pass
 
     @abstractmethod
-    async def find_by_slug(
-        self, brand_id: uuid.UUID, slug: str
-    ) -> Optional[Product]:
+    async def find_by_slug(self, brand_id: uuid.UUID, slug: str) -> Optional[Product]:
         """
         Find a product by brand and slug.
 
@@ -86,4 +85,3 @@ class ProductRepository(ABC):
             True if product exists, False otherwise
         """
         pass
-

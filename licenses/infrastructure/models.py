@@ -1,6 +1,7 @@
 """
 License, LicenseKey, Activation, AuditLog, and IdempotencyKey models.
 """
+
 import hashlib
 import secrets
 import string
@@ -34,7 +35,9 @@ class LicenseKey(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     brand = models.ForeignKey("brands.Brand", on_delete=models.CASCADE, related_name="license_keys")
     key = models.CharField(max_length=100, unique=True, db_index=True)
-    key_hash = models.CharField(max_length=64, db_index=True, help_text="Hashed version for secure lookup")
+    key_hash = models.CharField(
+        max_length=64, db_index=True, help_text="Hashed version for secure lookup"
+    )
     customer_email = models.EmailField(db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -99,10 +102,10 @@ class License(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    license_key = models.ForeignKey(
-        LicenseKey, on_delete=models.CASCADE, related_name="licenses"
+    license_key = models.ForeignKey(LicenseKey, on_delete=models.CASCADE, related_name="licenses")
+    product = models.ForeignKey(
+        "products.Product", on_delete=models.CASCADE, related_name="licenses"
     )
-    product = models.ForeignKey("products.Product", on_delete=models.CASCADE, related_name="licenses")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="valid")
     seat_limit = models.IntegerField(default=1, help_text="Maximum number of activations")
     expires_at = models.DateTimeField(null=True, blank=True)
@@ -204,61 +207,6 @@ class License(models.Model):
     def cancel(self):
         """Cancel the license."""
         self.status = "cancelled"
-        self.save()
-
-
-class Activation(models.Model):
-    """
-    Represents a specific instance where a license is activated.
-    Consumes a seat from the license.
-    """
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="activations")
-    instance_identifier = models.CharField(
-        max_length=500, help_text="URL, hostname, or machine ID"
-    )
-    instance_metadata = models.JSONField(
-        default=dict, blank=True, help_text="Additional instance information"
-    )
-    activated_at = models.DateTimeField(auto_now_add=True)
-    last_checked_at = models.DateTimeField(auto_now=True)
-    deactivated_at = models.DateTimeField(null=True, blank=True)
-    is_active = models.BooleanField(default=True, db_index=True)
-
-    class Meta:
-        db_table = "activations"
-        unique_together = [["license", "instance_identifier"]]
-        ordering = ["-activated_at"]
-        indexes = [
-            models.Index(fields=["license", "instance_identifier"]),
-            models.Index(fields=["license", "is_active"]),
-            models.Index(fields=["license", "is_active", "activated_at"]),
-        ]
-
-    def __str__(self):
-        return f"{self.license.license_key.key} @ {self.instance_identifier}"
-
-    def clean(self):
-        """Validate activation fields."""
-        from django.core.exceptions import ValidationError
-
-        if not self.instance_identifier or len(self.instance_identifier.strip()) == 0:
-            raise ValidationError("Instance identifier cannot be empty")
-        if len(self.instance_identifier) > 500:
-            raise ValidationError("Instance identifier too long")
-
-    def save(self, *args, **kwargs):
-        """Save activation with validation."""
-        self.full_clean()
-        super().save(*args, **kwargs)
-
-    def deactivate(self):
-        """Deactivate this activation, freeing a seat."""
-        if not self.is_active:
-            return  # Already deactivated
-        self.is_active = False
-        self.deactivated_at = timezone.now()
         self.save()
 
 

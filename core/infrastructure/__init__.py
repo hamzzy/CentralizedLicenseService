@@ -1,4 +1,3 @@
 """
 Infrastructure implementations.
 """
-

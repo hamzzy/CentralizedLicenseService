@@ -4,6 +4,7 @@ Base Django settings for CentralizedLicenseService.
 These settings are shared across all environments.
 Environment-specific overrides are in dev.py, test.py, and prod.py
 """
+
 from pathlib import Path
 
 # Build paths inside the project
@@ -213,4 +214,3 @@ LOGGING = {
         },
     },
 }
-

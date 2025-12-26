@@ -98,4 +98,3 @@ class InvalidInstanceIdentifierError(ActivationException):
     """Raised when an instance identifier is invalid."""
 
     pass
-

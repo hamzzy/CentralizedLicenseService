@@ -1,4 +1,3 @@
 """
 License infrastructure repository implementations.
 """
-

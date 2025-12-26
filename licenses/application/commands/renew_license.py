@@ -3,6 +3,7 @@ RenewLicenseCommand - US2.
 
 Command to renew (extend) a license.
 """
+
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -14,4 +15,3 @@ class RenewLicenseCommand:
 
     license_id: uuid.UUID
     expiration_date: datetime
-

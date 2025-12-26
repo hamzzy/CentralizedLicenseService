@@ -1,4 +1,3 @@
 """
 Core domain abstractions.
 """
-

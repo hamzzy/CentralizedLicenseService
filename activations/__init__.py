@@ -6,4 +6,3 @@ This module handles:
 - Seat management and limits
 - Instance activation/deactivation
 """
-

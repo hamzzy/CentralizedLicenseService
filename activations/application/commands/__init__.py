@@ -1,4 +1,3 @@
 """
 Activation command DTOs.
 """
-

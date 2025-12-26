@@ -3,6 +3,7 @@ Django implementation of LicenseKeyRepository port.
 
 This adapter converts between domain entities and Django ORM models.
 """
+
 import hashlib
 import uuid
 from typing import List, Optional
@@ -11,9 +12,7 @@ from asgiref.sync import sync_to_async
 
 from core.domain.value_objects import Email
 from licenses.domain.license_key import LicenseKey
-from licenses.infrastructure.models import (
-    LicenseKey as LicenseKeyModel,
-)
+from licenses.infrastructure.models import LicenseKey as LicenseKeyModel
 from licenses.ports.license_key_repository import LicenseKeyRepository
 
 
@@ -92,9 +91,7 @@ class DjangoLicenseKeyRepository(LicenseKeyRepository):
         return self._to_domain(model)
 
     @sync_to_async
-    def find_by_id(
-        self, license_key_id: uuid.UUID
-    ) -> Optional[LicenseKey]:
+    def find_by_id(self, license_key_id: uuid.UUID) -> Optional[LicenseKey]:
         """
         Find a license key by ID.
 
@@ -128,9 +125,7 @@ class DjangoLicenseKeyRepository(LicenseKeyRepository):
             return None
 
     @sync_to_async
-    def find_by_key_hash(
-        self, key_hash: str
-    ) -> Optional[LicenseKey]:
+    def find_by_key_hash(self, key_hash: str) -> Optional[LicenseKey]:
         """
         Find a license key by key hash.
 
@@ -147,9 +142,7 @@ class DjangoLicenseKeyRepository(LicenseKeyRepository):
             return None
 
     @sync_to_async
-    def find_by_customer_email(
-        self, brand_id: uuid.UUID, email: str
-    ) -> List[LicenseKey]:
+    def find_by_customer_email(self, brand_id: uuid.UUID, email: str) -> List[LicenseKey]:
         """
         Find license keys by customer email and brand.
 
@@ -160,9 +153,7 @@ class DjangoLicenseKeyRepository(LicenseKeyRepository):
         Returns:
             List of LicenseKey entities
         """
-        models = LicenseKeyModel.objects.filter(
-            brand_id=brand_id, customer_email=email
-        )
+        models = LicenseKeyModel.objects.filter(brand_id=brand_id, customer_email=email)
         return [self._to_domain(model) for model in models]
 
     @sync_to_async
@@ -177,4 +168,3 @@ class DjangoLicenseKeyRepository(LicenseKeyRepository):
             True if license key exists, False otherwise
         """
         return LicenseKeyModel.objects.filter(id=license_key_id).exists()
-

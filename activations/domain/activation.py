@@ -4,6 +4,7 @@ Activation domain entity.
 This is the core domain entity representing a license activation.
 It contains business logic and is independent of infrastructure.
 """
+
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -63,9 +64,7 @@ class Activation:
         return cls(
             id=activation_id or uuid.uuid4(),
             license_id=license_id,
-            instance_identifier=InstanceIdentifier(
-                instance_identifier, instance_type
-            ),
+            instance_identifier=InstanceIdentifier(instance_identifier, instance_type),
             instance_metadata=instance_metadata or {},
             activated_at=now,
             last_checked_at=now,
@@ -111,4 +110,3 @@ class Activation:
             deactivated_at=datetime.utcnow(),
             is_active=False,
         )
-

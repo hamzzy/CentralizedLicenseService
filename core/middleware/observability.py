@@ -3,6 +3,7 @@ Observability middleware.
 
 This middleware adds logging, metrics, and request tracing.
 """
+
 import logging
 import time
 import uuid
@@ -91,4 +92,3 @@ class ObservabilityMiddleware:
                 exc_info=True,
             )
             raise
-

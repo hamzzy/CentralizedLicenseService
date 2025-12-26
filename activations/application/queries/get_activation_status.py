@@ -3,6 +3,7 @@ GetActivationStatusQuery.
 
 Query to get activation status for a license key and instance.
 """
+
 from dataclasses import dataclass
 
 

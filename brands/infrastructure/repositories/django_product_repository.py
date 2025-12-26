@@ -3,6 +3,7 @@ Django implementation of ProductRepository port.
 
 This adapter converts between domain entities and Django ORM models.
 """
+
 import uuid
 from typing import List, Optional
 
@@ -104,9 +105,7 @@ class DjangoProductRepository(ProductRepository):
             return None
 
     @sync_to_async
-    def find_by_slug(
-        self, brand_id: uuid.UUID, slug: str
-    ) -> Optional[Product]:
+    def find_by_slug(self, brand_id: uuid.UUID, slug: str) -> Optional[Product]:
         """
         Find a product by brand and slug.
 
@@ -149,4 +148,3 @@ class DjangoProductRepository(ProductRepository):
             True if product exists, False otherwise
         """
         return ProductModel.objects.filter(id=product_id).exists()
-

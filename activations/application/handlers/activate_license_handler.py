@@ -3,22 +3,19 @@ ActivateLicenseHandler - US3.
 
 Handler for activating a license.
 """
+
 import hashlib
 
-from activations.application.commands.activate_license import (
-    ActivateLicenseCommand,
-)
-from activations.application.dto.activation_dto import (
-    ActivateLicenseResponseDTO,
-)
+from activations.application.commands.activate_license import ActivateLicenseCommand
+from activations.application.dto.activation_dto import ActivateLicenseResponseDTO
+from activations.domain.events import LicenseActivated
 from activations.domain.services import SeatManager
+from activations.ports.activation_repository import ActivationRepository
 from brands.ports.product_repository import ProductRepository
 from core.domain.exceptions import InvalidLicenseKeyError, LicenseNotFoundError
 from core.infrastructure.events import event_bus
-from activations.domain.events import LicenseActivated
 from licenses.ports.license_key_repository import LicenseKeyRepository
 from licenses.ports.license_repository import LicenseRepository
-from activations.ports.activation_repository import ActivationRepository
 
 
 class ActivateLicenseHandler:
@@ -37,9 +34,7 @@ class ActivateLicenseHandler:
         self.product_repository = product_repository
         self.activation_repository = activation_repository
 
-    async def handle(
-        self, command: ActivateLicenseCommand
-    ) -> ActivateLicenseResponseDTO:
+    async def handle(self, command: ActivateLicenseCommand) -> ActivateLicenseResponseDTO:
         """
         Handle activate license command.
 
@@ -56,9 +51,7 @@ class ActivateLicenseHandler:
         """
         # Find license key
         key_hash = hashlib.sha256(command.license_key.encode()).hexdigest()
-        license_key = await self.license_key_repository.find_by_key_hash(
-            key_hash
-        )
+        license_key = await self.license_key_repository.find_by_key_hash(key_hash)
 
         if not license_key:
             raise InvalidLicenseKeyError("Invalid license key")
@@ -71,16 +64,12 @@ class ActivateLicenseHandler:
             raise ValueError(f"Product {command.product_slug} not found")
 
         # Find license by license key and product
-        license = (
-            await self.license_repository.find_by_license_key_and_product(
-                license_key.id, product.id
-            )
+        license = await self.license_repository.find_by_license_key_and_product(
+            license_key.id, product.id
         )
 
         if not license:
-            raise LicenseNotFoundError(
-                f"License not found for product {command.product_slug}"
-            )
+            raise LicenseNotFoundError(f"License not found for product {command.product_slug}")
 
         # Activate license using SeatManager
         activation = await SeatManager.activate_license(
@@ -102,9 +91,7 @@ class ActivateLicenseHandler:
         )
 
         # Calculate remaining seats
-        active_count = await SeatManager.count_active_seats(
-            license.id, self.activation_repository
-        )
+        active_count = await SeatManager.count_active_seats(license.id, self.activation_repository)
         seats_remaining = max(0, license.seat_limit - active_count)
 
         return ActivateLicenseResponseDTO(
@@ -113,4 +100,3 @@ class ActivateLicenseHandler:
             seats_remaining=seats_remaining,
             message="License activated successfully",
         )
-

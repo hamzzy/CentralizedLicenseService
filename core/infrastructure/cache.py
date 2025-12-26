@@ -4,6 +4,7 @@ Cache abstraction (port).
 This module defines the cache interface that can be implemented
 with different backends (Redis, Memcached, in-memory, etc.).
 """
+
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
@@ -60,4 +61,3 @@ class CachePort(ABC):
             pattern: Pattern to match (None for all)
         """
         pass
-

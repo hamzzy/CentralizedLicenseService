@@ -1,6 +1,7 @@
 """
 URL configuration for product API endpoints.
 """
+
 from django.urls import path
 
 from api.v1.product import views
@@ -14,4 +15,3 @@ urlpatterns = [
         name="deactivate-seat",
     ),
 ]
-

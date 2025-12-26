@@ -3,6 +3,7 @@ Cache adapter implementations.
 
 Provides Redis and Django cache implementations of CachePort.
 """
+
 import json
 import logging
 from typing import Any, Optional
@@ -86,9 +87,7 @@ class DjangoCacheAdapter(CachePort):
             if pattern:
                 # Django cache doesn't support pattern matching directly
                 # In production, use Redis cache backend for pattern support
-                logger.warning(
-                    f"Pattern-based cache clear not fully supported: {pattern}"
-                )
+                logger.warning(f"Pattern-based cache clear not fully supported: {pattern}")
             else:
                 cache.clear()
                 logger.debug("Cache cleared")
@@ -98,4 +97,3 @@ class DjangoCacheAdapter(CachePort):
 
 # Global cache instance
 cache_adapter = DjangoCacheAdapter()
-

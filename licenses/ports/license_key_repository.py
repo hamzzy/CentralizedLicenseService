@@ -4,9 +4,10 @@ LicenseKey repository port (interface).
 This defines the contract for license key persistence operations.
 Implementations are in the infrastructure layer.
 """
+
+import uuid
 from abc import ABC, abstractmethod
 from typing import List, Optional
-import uuid
 
 from licenses.domain.license_key import LicenseKey
 
@@ -33,9 +34,7 @@ class LicenseKeyRepository(ABC):
         pass
 
     @abstractmethod
-    async def find_by_id(
-        self, license_key_id: uuid.UUID
-    ) -> Optional[LicenseKey]:
+    async def find_by_id(self, license_key_id: uuid.UUID) -> Optional[LicenseKey]:
         """
         Find a license key by ID.
 
@@ -61,9 +60,7 @@ class LicenseKeyRepository(ABC):
         pass
 
     @abstractmethod
-    async def find_by_key_hash(
-        self, key_hash: str
-    ) -> Optional[LicenseKey]:
+    async def find_by_key_hash(self, key_hash: str) -> Optional[LicenseKey]:
         """
         Find a license key by key hash.
 
@@ -76,9 +73,7 @@ class LicenseKeyRepository(ABC):
         pass
 
     @abstractmethod
-    async def find_by_customer_email(
-        self, brand_id: uuid.UUID, email: str
-    ) -> List[LicenseKey]:
+    async def find_by_customer_email(self, brand_id: uuid.UUID, email: str) -> List[LicenseKey]:
         """
         Find license keys by customer email and brand.
 
@@ -103,4 +98,3 @@ class LicenseKeyRepository(ABC):
             True if license key exists, False otherwise
         """
         pass
-

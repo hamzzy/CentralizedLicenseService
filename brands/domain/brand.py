@@ -4,6 +4,7 @@ Brand domain entity.
 This is the core domain entity representing a brand/tenant.
 It contains business logic and is independent of infrastructure.
 """
+
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -40,8 +41,7 @@ class Brand:
             raise ValueError("Brand prefix must be between 2 and 10 characters")
         if not self.prefix.replace("-", "").replace("_", "").isalnum():
             raise ValueError(
-                "Brand prefix must contain only alphanumeric characters, "
-                "hyphens, or underscores"
+                "Brand prefix must contain only alphanumeric characters, " "hyphens, or underscores"
             )
 
     @classmethod
@@ -92,4 +92,3 @@ class Brand:
             created_at=self.created_at,
             updated_at=datetime.utcnow(),
         )
-

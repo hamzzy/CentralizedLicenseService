@@ -1,6 +1,7 @@
 """
 Database utilities and transaction management.
 """
+
 import contextlib
 from typing import AsyncGenerator
 
@@ -19,4 +20,3 @@ async def async_transaction() -> AsyncGenerator[None, None]:
     """
     with transaction.atomic():
         yield
-
