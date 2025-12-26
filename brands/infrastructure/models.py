@@ -16,8 +16,14 @@ class Brand(models.Model):
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255, help_text="Brand display name")
-    slug = models.SlugField(max_length=100, unique=True, help_text="URL-safe identifier")
+    name = models.CharField(
+        max_length=255, help_text="Brand display name"
+    )
+    slug = models.SlugField(
+        max_length=100,
+        unique=True,
+        help_text="URL-safe identifier",
+    )
     prefix = models.CharField(
         max_length=10,
         unique=True,
@@ -35,7 +41,8 @@ class Brand(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(prefix__length__gte=2) & models.Q(prefix__length__lte=10),
+                check=models.Q(prefix__length__gte=2)
+                & models.Q(prefix__length__lte=10),
                 name="prefix_length_valid",
             ),
         ]
@@ -91,12 +98,16 @@ class ApiKey(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name="api_keys")
+    brand = models.ForeignKey(
+        Brand, on_delete=models.CASCADE, related_name="api_keys"
+    )
     key_prefix = models.CharField(max_length=8, editable=False)
     key_hash = models.CharField(
         max_length=64, editable=False, db_index=True
     )
-    scope = models.CharField(max_length=20, choices=SCOPE_CHOICES, default="full")
+    scope = models.CharField(
+        max_length=20, choices=SCOPE_CHOICES, default="full"
+    )
     expires_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_used_at = models.DateTimeField(null=True, blank=True)
