@@ -4,7 +4,7 @@ Prometheus metrics for the license service.
 Custom metrics for business logic and performance monitoring.
 """
 
-from prometheus_client import Counter, Histogram, Gauge
+from prometheus_client import Counter, Gauge, Histogram
 
 # HTTP metrics
 http_requests_total = Counter(

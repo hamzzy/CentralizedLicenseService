@@ -14,8 +14,8 @@ class CentralizedLicenseServiceConfig(AppConfig):
     def ready(self):
         """Called when Django starts."""
         # Only run in main process (not in management commands that don't need it)
-        import sys
         import os
+        import sys
 
         # Skip for management commands
         if len(sys.argv) > 1 and sys.argv[1] in [
@@ -40,6 +40,7 @@ class CentralizedLicenseServiceConfig(AppConfig):
         if not hasattr(self, "_initialized"):
             try:
                 import logging
+
                 logger = logging.getLogger(__name__)
                 logger.info("Setting up observability...")
                 self.setup_observability()
@@ -68,9 +69,7 @@ class CentralizedLicenseServiceConfig(AppConfig):
     def register_event_handlers(self):
         """Register event handlers after apps are ready."""
         try:
-            from core.infrastructure.event_handlers import (
-                register_event_handlers as register,
-            )
+            from core.infrastructure.event_handlers import register_event_handlers as register
 
             register()
         except Exception as e:

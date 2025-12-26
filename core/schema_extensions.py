@@ -1,6 +1,7 @@
 """
 Custom schema extensions for drf-spectacular to add API key authentication.
 """
+
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from drf_spectacular.plumbing import build_bearer_security_scheme_object
 
@@ -19,4 +20,3 @@ class ApiKeyAuthenticationExtension(OpenApiAuthenticationExtension):
             "name": "X-API-Key",
             "description": "API key for brand authentication. Get your API key from the brand admin panel.",
         }
-

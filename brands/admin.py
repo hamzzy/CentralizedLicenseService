@@ -1,6 +1,7 @@
 """
 Django admin configuration for brands app.
 """
+
 from django.contrib import admin
 from django.utils.html import format_html
 
@@ -98,9 +99,7 @@ class ApiKeyAdmin(admin.ModelAdmin):
     def is_valid_display(self, obj):
         """Display validity status with color."""
         if obj.is_valid():
-            return format_html(
-                '<span style="color: green;">✓ Valid</span>'
-            )
+            return format_html('<span style="color: green;">✓ Valid</span>')
         return format_html('<span style="color: red;">✗ Invalid</span>')
 
     is_valid_display.short_description = "Status"
@@ -134,4 +133,3 @@ class ApiKeyAdmin(admin.ModelAdmin):
                 "(Save this - it won't be shown again)",
                 level="WARNING",
             )
-

@@ -9,6 +9,7 @@ These endpoints are used by end-user products to:
 
 import uuid
 
+from asgiref.sync import async_to_sync
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from opentelemetry import trace
 from rest_framework import status
@@ -54,24 +55,28 @@ class ActivateLicenseView(APIView):
     """View for activating licenses - US3."""
 
     @extend_schema(
-    operation_id="activate_license",
-    summary="Activate License",
-    description=(
-        "Activate a license on a specific instance (URL, hostname, or machine ID). "
-        "This consumes a seat from the license's seat limit."
-    ),
-    tags=["Product API"],
-    request=ActivateLicenseRequestSerializer,
-    responses={
-        201: ActivateLicenseResponseSerializer,
-        400: {"description": "Bad Request"},
-        404: {"description": "License key not found"},
-        409: {"description": "License already activated on this instance"},
-        422: {"description": "License invalid, expired, or seat limit exceeded"},
-    },
-)
-    async def post(self, request: Request) -> Response:
+        operation_id="activate_license",
+        summary="Activate License",
+        description=(
+            "Activate a license on a specific instance (URL, hostname, or machine ID). "
+            "This consumes a seat from the license's seat limit."
+        ),
+        tags=["Product API"],
+        request=ActivateLicenseRequestSerializer,
+        responses={
+            201: ActivateLicenseResponseSerializer,
+            400: {"description": "Bad Request"},
+            404: {"description": "License key not found"},
+            409: {"description": "License already activated on this instance"},
+            422: {"description": "License invalid, expired, or seat limit exceeded"},
+        },
+    )
+    def post(self, request: Request) -> Response:
         """Activate a license for an instance - US3."""
+        return async_to_sync(self._handle_activate_license)(request)
+
+    async def _handle_activate_license(self, request: Request) -> Response:
+        """Async handler for activate license."""
         with tracer.start_as_current_span("activate_license") as span:
             span.set_attribute("operation", "activate_license")
 
@@ -146,9 +151,7 @@ class ActivateLicenseView(APIView):
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(
-                    trace.Status(trace.StatusCode.ERROR, "Internal server error")
-                )
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -159,44 +162,47 @@ class GetLicenseStatusView(APIView):
     """View for checking license status - US4."""
 
     @extend_schema(
-    operation_id="get_license_status",
-    summary="Check License Status",
-    description=(
-        "Verify license validity and seat availability for a specific instance. "
-        "Returns license details and activation status."
-    ),
-    tags=["Product API"],
-    parameters=[
-        OpenApiParameter(
-            name="license_key",
-            type=str,
-            location=OpenApiParameter.QUERY,
-            required=True,
-            description="License key string",
+        operation_id="get_license_status",
+        summary="Check License Status",
+        description=(
+            "Verify license validity and seat availability for a specific instance. "
+            "Returns license details and activation status."
         ),
-        OpenApiParameter(
-            name="instance_identifier",
-            type=str,
-            location=OpenApiParameter.QUERY,
-            required=False,
-            description="Instance identifier to check activation status",
-        ),
-    ],
-    responses={
-        200: LicenseStatusResponseSerializer,
-        400: {"description": "Bad Request"},
-        404: {"description": "License key not found"},
-        422: {"description": "License invalid, expired, or suspended"},
-    },
-)
-    async def get(self, request: Request) -> Response:
+        tags=["Product API"],
+        parameters=[
+            OpenApiParameter(
+                name="license_key",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="License key string",
+            ),
+            OpenApiParameter(
+                name="instance_identifier",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Instance identifier to check activation status",
+            ),
+        ],
+        responses={
+            200: LicenseStatusResponseSerializer,
+            400: {"description": "Bad Request"},
+            404: {"description": "License key not found"},
+            422: {"description": "License invalid, expired, or suspended"},
+        },
+    )
+    def get(self, request: Request) -> Response:
         """Get license status and entitlements - US4."""
+        return async_to_sync(self._handle_get_license_status)(request)
+
+    async def _handle_get_license_status(self, request: Request) -> Response:
+        """Async handler for get license status."""
         with tracer.start_as_current_span("get_license_status") as span:
             span.set_attribute("operation", "get_license_status")
 
-            license_key = (
-                request.query_params.get("license_key")
-                or request.headers.get("X-License-Key")
+            license_key = request.query_params.get("license_key") or request.headers.get(
+                "X-License-Key"
             )
 
             if not license_key:
@@ -238,9 +244,7 @@ class GetLicenseStatusView(APIView):
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(
-                    trace.Status(trace.StatusCode.ERROR, "Internal server error")
-                )
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -251,22 +255,26 @@ class DeactivateSeatView(APIView):
     """View for deactivating seats - US5."""
 
     @extend_schema(
-    operation_id="deactivate_seat",
-    summary="Deactivate Seat",
-    description=(
-        "Release a seat for reuse. This deactivates the license on a specific instance. "
-        "The seat becomes available for activation on another instance."
-    ),
-    tags=["Product API"],
-    request=DeactivateSeatRequestSerializer,
-    responses={
-        200: {"description": "Seat deactivated successfully"},
-        400: {"description": "Bad Request"},
-        404: {"description": "License key or activation not found"},
-    },
-)
-    async def delete(self, request: Request, activation_id: uuid.UUID) -> Response:
+        operation_id="deactivate_seat",
+        summary="Deactivate Seat",
+        description=(
+            "Release a seat for reuse. This deactivates the license on a specific instance. "
+            "The seat becomes available for activation on another instance."
+        ),
+        tags=["Product API"],
+        request=DeactivateSeatRequestSerializer,
+        responses={
+            200: {"description": "Seat deactivated successfully"},
+            400: {"description": "Bad Request"},
+            404: {"description": "License key or activation not found"},
+        },
+    )
+    def delete(self, request: Request, activation_id: uuid.UUID) -> Response:
         """Deactivate a seat - US5."""
+        return async_to_sync(self._handle_deactivate_seat)(request, activation_id)
+
+    async def _handle_deactivate_seat(self, request: Request, activation_id: uuid.UUID) -> Response:
+        """Async handler for deactivate seat."""
         with tracer.start_as_current_span("deactivate_seat") as span:
             span.set_attribute("operation", "deactivate_seat")
             span.set_attribute("activation.id", str(activation_id))
@@ -285,13 +293,15 @@ class DeactivateSeatView(APIView):
             span.set_attribute("license_key", license_key)
 
             # Get instance_identifier from request body or query param
-            instance_identifier = request.data.get("instance_identifier") or request.query_params.get(
+            instance_identifier = request.data.get(
                 "instance_identifier"
-            )
+            ) or request.query_params.get("instance_identifier")
 
             if not instance_identifier:
                 span.set_attribute("error", "instance_identifier_required")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Instance identifier required"))
+                span.set_status(
+                    trace.Status(trace.StatusCode.ERROR, "Instance identifier required")
+                )
                 return Response(
                     {"error": "instance_identifier is required"},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -324,9 +334,7 @@ class DeactivateSeatView(APIView):
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(
-                    trace.Status(trace.StatusCode.ERROR, "Internal server error")
-                )
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,

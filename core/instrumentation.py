@@ -9,9 +9,7 @@ import logging
 import os
 
 from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
-    OTLPSpanExporter,
-)
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.django import DjangoInstrumentor
 from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
 from opentelemetry.instrumentation.redis import RedisInstrumentor
@@ -19,7 +17,6 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from prometheus_client import start_http_server
-
 
 logger = logging.getLogger(__name__)
 
@@ -71,14 +68,11 @@ def setup_opentelemetry():
     try:
         # Start metrics server on all interfaces (0.0.0.0) so Prometheus can access it
         from prometheus_client import start_http_server
+
         start_http_server(prometheus_port, addr="0.0.0.0")
-        logger.info(
-            f"Prometheus metrics server started on 0.0.0.0:{prometheus_port}"
-        )
+        logger.info(f"Prometheus metrics server started on 0.0.0.0:{prometheus_port}")
     except OSError as e:
-        logger.warning(
-            f"Prometheus metrics server port {prometheus_port} already in use: {e}"
-        )
+        logger.warning(f"Prometheus metrics server port {prometheus_port} already in use: {e}")
 
     logger.info("OpenTelemetry instrumentation configured")
 

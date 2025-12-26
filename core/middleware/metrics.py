@@ -9,10 +9,7 @@ from typing import Callable
 
 from django.http import HttpRequest, HttpResponse
 
-from core.metrics import (
-    http_request_duration_seconds,
-    http_requests_total,
-)
+from core.metrics import http_request_duration_seconds, http_requests_total
 
 
 class MetricsMiddleware:
@@ -36,7 +33,10 @@ class MetricsMiddleware:
         endpoint = request.path.split("?")[0]
         # Normalize UUIDs in paths for better metric aggregation
         import re
-        endpoint = re.sub(r"/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", "/{id}", endpoint)
+
+        endpoint = re.sub(
+            r"/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", "/{id}", endpoint
+        )
         endpoint = re.sub(r"/\d+", "/{id}", endpoint)
 
         try:
@@ -62,7 +62,7 @@ class MetricsMiddleware:
         except Exception as e:
             # Calculate duration even on error
             duration = time.time() - start_time
-            
+
             # Record error metrics
             http_requests_total.labels(
                 method=request.method,
@@ -74,5 +74,5 @@ class MetricsMiddleware:
                 method=request.method,
                 endpoint=endpoint,
             ).observe(duration)
-            
+
             raise

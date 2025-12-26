@@ -44,7 +44,7 @@ class TracingMiddleware:
                 content_type = request.headers.get("Content-Type", "")
                 if content_type:
                     span.set_attribute("http.request.content_type", content_type)
-                
+
                 # Add API key presence (but not the value)
                 if "X-API-Key" in request.headers:
                     span.set_attribute("http.request.has_api_key", True)
@@ -58,12 +58,8 @@ class TracingMiddleware:
                 for key, value in list(query_params.items())[:10]:
                     # Skip sensitive params
                     if key not in ["password", "secret", "token"]:
-                        param_value = (
-                            value[0] if isinstance(value, list) else value
-                        )
-                        span.set_attribute(
-                            f"http.request.query.{key}", str(param_value)
-                        )
+                        param_value = value[0] if isinstance(value, list) else value
+                        span.set_attribute(f"http.request.query.{key}", str(param_value))
 
             # Add tenant context if available
             tenant_id = getattr(request, "tenant_id", None)
@@ -105,9 +101,13 @@ class TracingMiddleware:
 
                     # Set span status based on HTTP status code
                 if response.status_code >= 500:
-                    span.set_status(trace.Status(trace.StatusCode.ERROR, f"HTTP {response.status_code}"))
+                    span.set_status(
+                        trace.Status(trace.StatusCode.ERROR, f"HTTP {response.status_code}")
+                    )
                 elif response.status_code >= 400:
-                    span.set_status(trace.Status(trace.StatusCode.ERROR, f"HTTP {response.status_code}"))
+                    span.set_status(
+                        trace.Status(trace.StatusCode.ERROR, f"HTTP {response.status_code}")
+                    )
                 else:
                     span.set_status(trace.Status(trace.StatusCode.OK))
 

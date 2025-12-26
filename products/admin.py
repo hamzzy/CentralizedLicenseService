@@ -1,6 +1,7 @@
 """
 Django admin configuration for products app.
 """
+
 from django.contrib import admin
 
 from products.infrastructure.models import Product
@@ -39,4 +40,3 @@ class ProductAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """Optimize queryset."""
         return super().get_queryset(request).select_related("brand").prefetch_related("licenses")
-

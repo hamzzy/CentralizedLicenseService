@@ -1,6 +1,7 @@
 """
 Django admin configuration for activations app.
 """
+
 from django.contrib import admin
 from django.utils.html import format_html
 
@@ -71,12 +72,8 @@ class ActivationAdmin(admin.ModelAdmin):
     def is_active_display(self, obj):
         """Display active status with color."""
         if obj.is_active:
-            return format_html(
-                '<span style="color: green; font-weight: bold;">✓ Active</span>'
-            )
-        return format_html(
-            '<span style="color: red; font-weight: bold;">✗ Inactive</span>'
-        )
+            return format_html('<span style="color: green; font-weight: bold;">✓ Active</span>')
+        return format_html('<span style="color: red; font-weight: bold;">✗ Inactive</span>')
 
     is_active_display.short_description = "Status"
 
@@ -90,4 +87,3 @@ class ActivationAdmin(admin.ModelAdmin):
                 "license__product",
             )
         )
-

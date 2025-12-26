@@ -9,6 +9,7 @@ These endpoints are used by brand systems to:
 
 import uuid
 
+from asgiref.sync import async_to_sync
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from opentelemetry import trace
 from rest_framework import status
@@ -65,23 +66,27 @@ class ProvisionLicenseView(APIView):
     """View for provisioning licenses - US1."""
 
     @extend_schema(
-    operation_id="provision_license",
-    summary="Provision License",
-    description=(
-        "Create a new license key and associated licenses for a customer. "
+        operation_id="provision_license",
+        summary="Provision License",
+        description=(
+            "Create a new license key and associated licenses for a customer. "
             "This endpoint requires brand API key authentication via X-API-Key header."
-    ),
-    tags=["Brand API"],
-    request=ProvisionLicenseRequestSerializer,
-    responses={
-        201: ProvisionLicenseResponseSerializer,
-        400: {"description": "Bad Request"},
+        ),
+        tags=["Brand API"],
+        request=ProvisionLicenseRequestSerializer,
+        responses={
+            201: ProvisionLicenseResponseSerializer,
+            400: {"description": "Bad Request"},
             401: {"description": "Unauthorized - Missing or invalid API key"},
-        404: {"description": "Not Found"},
-    },
-)
-    async def post(self, request: Request) -> Response:
+            404: {"description": "Not Found"},
+        },
+    )
+    def post(self, request: Request) -> Response:
         """Provision a license key and licenses - US1."""
+        return async_to_sync(self._handle_provision_license)(request)
+
+    async def _handle_provision_license(self, request: Request) -> Response:
+        """Async handler for provision license."""
         with tracer.start_as_current_span("provision_license") as span:
             span.set_attribute("operation", "provision_license")
 
@@ -125,15 +130,11 @@ class ProvisionLicenseView(APIView):
                 result = await handler.handle(command)
 
                 response_serializer = ProvisionLicenseResponseSerializer(result)
-                span.set_attribute(
-                    "license_key.id", str(result.license_key.id)
-                )
+                span.set_attribute("license_key.id", str(result.license_key.id))
                 span.set_attribute("licenses.count", len(result.licenses))
                 span.set_status(trace.Status(trace.StatusCode.OK))
 
-                return Response(
-                    response_serializer.data, status=status.HTTP_201_CREATED
-                )
+                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
             except DomainException as e:
                 span.set_attribute("error", "domain_exception")
@@ -142,9 +143,7 @@ class ProvisionLicenseView(APIView):
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(
-                    trace.Status(trace.StatusCode.ERROR, "Internal server error")
-                )
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -155,20 +154,24 @@ class RenewLicenseView(APIView):
     """View for renewing licenses - US2."""
 
     @extend_schema(
-    operation_id="renew_license",
-    summary="Renew License",
-    description="Extend a license's expiration date.",
-    tags=["Brand API"],
-    request=RenewLicenseRequestSerializer,
-    responses={
-        200: {"description": "License renewed successfully"},
-        400: {"description": "Bad Request"},
+        operation_id="renew_license",
+        summary="Renew License",
+        description="Extend a license's expiration date.",
+        tags=["Brand API"],
+        request=RenewLicenseRequestSerializer,
+        responses={
+            200: {"description": "License renewed successfully"},
+            400: {"description": "Bad Request"},
             401: {"description": "Unauthorized - Missing or invalid API key"},
-        404: {"description": "License not found"},
-    },
-)
-    async def patch(self, request: Request, license_id: uuid.UUID) -> Response:
+            404: {"description": "License not found"},
+        },
+    )
+    def patch(self, request: Request, license_id: uuid.UUID) -> Response:
         """Renew a license - US2."""
+        return async_to_sync(self._handle_renew_license)(request, license_id)
+
+    async def _handle_renew_license(self, request: Request, license_id: uuid.UUID) -> Response:
+        """Async handler for renew license."""
         with tracer.start_as_current_span("renew_license") as span:
             span.set_attribute("operation", "renew_license")
             span.set_attribute("license.id", str(license_id))
@@ -194,7 +197,9 @@ class RenewLicenseView(APIView):
                     expiration_date=serializer.validated_data["expiration_date"],
                 )
 
-                span.set_attribute("expiration_date", str(serializer.validated_data["expiration_date"]))
+                span.set_attribute(
+                    "expiration_date", str(serializer.validated_data["expiration_date"])
+                )
 
                 await handler.handle(command)
 
@@ -210,9 +215,7 @@ class RenewLicenseView(APIView):
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(
-                    trace.Status(trace.StatusCode.ERROR, "Internal server error")
-                )
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -223,20 +226,24 @@ class SuspendLicenseView(APIView):
     """View for suspending licenses - US2."""
 
     @extend_schema(
-    operation_id="suspend_license",
-    summary="Suspend License",
-    description="Temporarily disable a license. Suspended licenses cannot be activated.",
-    tags=["Brand API"],
-    request=SuspendLicenseRequestSerializer,
-    responses={
-        200: {"description": "License suspended successfully"},
-        400: {"description": "Bad Request"},
+        operation_id="suspend_license",
+        summary="Suspend License",
+        description="Temporarily disable a license. Suspended licenses cannot be activated.",
+        tags=["Brand API"],
+        request=SuspendLicenseRequestSerializer,
+        responses={
+            200: {"description": "License suspended successfully"},
+            400: {"description": "Bad Request"},
             401: {"description": "Unauthorized - Missing or invalid API key"},
-        404: {"description": "License not found"},
-    },
-)
-    async def patch(self, request: Request, license_id: uuid.UUID) -> Response:
+            404: {"description": "License not found"},
+        },
+    )
+    def patch(self, request: Request, license_id: uuid.UUID) -> Response:
         """Suspend a license - US2."""
+        return async_to_sync(self._handle_suspend_license)(request, license_id)
+
+    async def _handle_suspend_license(self, request: Request, license_id: uuid.UUID) -> Response:
+        """Async handler for suspend license."""
         with tracer.start_as_current_span("suspend_license") as span:
             span.set_attribute("operation", "suspend_license")
             span.set_attribute("license.id", str(license_id))
@@ -279,9 +286,7 @@ class SuspendLicenseView(APIView):
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(
-                    trace.Status(trace.StatusCode.ERROR, "Internal server error")
-                )
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -292,20 +297,24 @@ class ResumeLicenseView(APIView):
     """View for resuming licenses - US2."""
 
     @extend_schema(
-    operation_id="resume_license",
-    summary="Resume License",
-    description="Re-enable a suspended license.",
-    tags=["Brand API"],
-    request=ResumeLicenseRequestSerializer,
-    responses={
-        200: {"description": "License resumed successfully"},
-        400: {"description": "Bad Request"},
+        operation_id="resume_license",
+        summary="Resume License",
+        description="Re-enable a suspended license.",
+        tags=["Brand API"],
+        request=ResumeLicenseRequestSerializer,
+        responses={
+            200: {"description": "License resumed successfully"},
+            400: {"description": "Bad Request"},
             401: {"description": "Unauthorized - Missing or invalid API key"},
-        404: {"description": "License not found"},
-    },
-)
-    async def patch(self, request: Request, license_id: uuid.UUID) -> Response:
+            404: {"description": "License not found"},
+        },
+    )
+    def patch(self, request: Request, license_id: uuid.UUID) -> Response:
         """Resume a license - US2."""
+        return async_to_sync(self._handle_resume_license)(request, license_id)
+
+    async def _handle_resume_license(self, request: Request, license_id: uuid.UUID) -> Response:
+        """Async handler for resume license."""
         with tracer.start_as_current_span("resume_license") as span:
             span.set_attribute("operation", "resume_license")
             span.set_attribute("license.id", str(license_id))
@@ -342,9 +351,7 @@ class ResumeLicenseView(APIView):
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(
-                    trace.Status(trace.StatusCode.ERROR, "Internal server error")
-                )
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -355,20 +362,24 @@ class CancelLicenseView(APIView):
     """View for cancelling licenses - US2."""
 
     @extend_schema(
-    operation_id="cancel_license",
-    summary="Cancel License",
-    description="Permanently cancel a license. Cancelled licenses cannot be reactivated.",
-    tags=["Brand API"],
-    request=CancelLicenseRequestSerializer,
-    responses={
-        200: {"description": "License cancelled successfully"},
-        400: {"description": "Bad Request"},
+        operation_id="cancel_license",
+        summary="Cancel License",
+        description="Permanently cancel a license. Cancelled licenses cannot be reactivated.",
+        tags=["Brand API"],
+        request=CancelLicenseRequestSerializer,
+        responses={
+            200: {"description": "License cancelled successfully"},
+            400: {"description": "Bad Request"},
             401: {"description": "Unauthorized - Missing or invalid API key"},
-        404: {"description": "License not found"},
-    },
-)
-    async def patch(self, request: Request, license_id: uuid.UUID) -> Response:
+            404: {"description": "License not found"},
+        },
+    )
+    def patch(self, request: Request, license_id: uuid.UUID) -> Response:
         """Cancel a license - US2."""
+        return async_to_sync(self._handle_cancel_license)(request, license_id)
+
+    async def _handle_cancel_license(self, request: Request, license_id: uuid.UUID) -> Response:
+        """Async handler for cancel license."""
         with tracer.start_as_current_span("cancel_license") as span:
             span.set_attribute("operation", "cancel_license")
             span.set_attribute("license.id", str(license_id))
@@ -411,9 +422,7 @@ class CancelLicenseView(APIView):
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(
-                    trace.Status(trace.StatusCode.ERROR, "Internal server error")
-                )
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -424,27 +433,31 @@ class ListLicensesByEmailView(APIView):
     """View for listing licenses by customer email - US6."""
 
     @extend_schema(
-    operation_id="list_licenses_by_email",
-    summary="List Licenses by Email",
-    description="Query all licenses for a customer by email address.",
-    tags=["Brand API"],
-    parameters=[
-        OpenApiParameter(
-            name="email",
-            type=str,
-            location=OpenApiParameter.QUERY,
-            required=True,
-            description="Customer email address",
-        ),
-    ],
-    responses={
-        200: LicenseListItemSerializer(many=True),
-        400: {"description": "Bad Request"},
+        operation_id="list_licenses_by_email",
+        summary="List Licenses by Email",
+        description="Query all licenses for a customer by email address.",
+        tags=["Brand API"],
+        parameters=[
+            OpenApiParameter(
+                name="email",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Customer email address",
+            ),
+        ],
+        responses={
+            200: LicenseListItemSerializer(many=True),
+            400: {"description": "Bad Request"},
             401: {"description": "Unauthorized - Missing or invalid API key"},
-    },
-)
-    async def get(self, request: Request) -> Response:
+        },
+    )
+    def get(self, request: Request) -> Response:
         """List licenses by customer email - US6."""
+        return async_to_sync(self._handle_list_licenses_by_email)(request)
+
+    async def _handle_list_licenses_by_email(self, request: Request) -> Response:
+        """Async handler for list licenses by email."""
         with tracer.start_as_current_span("list_licenses_by_email") as span:
             span.set_attribute("operation", "list_licenses_by_email")
 
@@ -493,9 +506,7 @@ class ListLicensesByEmailView(APIView):
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(
-                    trace.Status(trace.StatusCode.ERROR, "Internal server error")
-                )
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
                 return Response(
                     {"error": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
