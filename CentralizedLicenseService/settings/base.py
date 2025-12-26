@@ -44,6 +44,17 @@ except Exception as e:
     logger = logging.getLogger(__name__)
     logger.warning(f"Failed to register event handlers: {e}")
 
+# Setup OpenTelemetry instrumentation
+try:
+    from core.instrumentation import setup_opentelemetry
+
+    setup_opentelemetry()
+except Exception as e:
+    import logging
+
+    logger = logging.getLogger(__name__)
+    logger.warning(f"Failed to setup OpenTelemetry: {e}")
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

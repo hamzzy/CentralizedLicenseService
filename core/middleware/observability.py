@@ -2,6 +2,7 @@
 Observability middleware.
 
 This middleware adds logging, metrics, and request tracing.
+Integrates with Loki for log aggregation and OpenTelemetry for tracing.
 """
 
 import logging
@@ -12,6 +13,14 @@ from typing import Callable
 from django.http import HttpRequest, HttpResponse
 
 logger = logging.getLogger(__name__)
+
+try:
+    from opentelemetry import trace
+    from opentelemetry.trace import format_trace_id
+
+    OTEL_AVAILABLE = True
+except ImportError:
+    OTEL_AVAILABLE = False
 
 
 class ObservabilityMiddleware:
@@ -43,38 +52,55 @@ class ObservabilityMiddleware:
         correlation_id = str(uuid.uuid4())
         request.correlation_id = correlation_id  # type: ignore
 
-        # Log request
+        # Get trace context if available
+        trace_id = None
+        span_id = None
+        if OTEL_AVAILABLE:
+            span = trace.get_current_span()
+            if span and span.get_span_context().is_valid:
+                trace_context = span.get_span_context()
+                trace_id = format_trace_id(trace_context.trace_id)
+                span_id = format_trace_id(trace_context.span_id)
+
+        # Log request (structured for Loki)
         start_time = time.time()
-        logger.info(
-            "Request started",
-            extra={
-                "correlation_id": correlation_id,
-                "method": request.method,
-                "path": request.path,
-                "remote_addr": request.META.get("REMOTE_ADDR"),
-            },
-        )
+        log_extra = {
+            "correlation_id": correlation_id,
+            "method": request.method,
+            "path": request.path,
+            "remote_addr": request.META.get("REMOTE_ADDR"),
+            "user_agent": request.META.get("HTTP_USER_AGENT", ""),
+        }
+        if trace_id:
+            log_extra["trace_id"] = trace_id
+            log_extra["span_id"] = span_id
+
+        logger.info("Request started", extra=log_extra)
 
         # Process request
         try:
             response = self.get_response(request)
             duration = time.time() - start_time
 
-            # Log response
-            logger.info(
-                "Request completed",
-                extra={
-                    "correlation_id": correlation_id,
-                    "method": request.method,
-                    "path": request.path,
-                    "status_code": response.status_code,
-                    "duration_ms": round(duration * 1000, 2),
-                },
-            )
+            # Log response (structured for Loki)
+            log_extra = {
+                "correlation_id": correlation_id,
+                "method": request.method,
+                "path": request.path,
+                "status_code": response.status_code,
+                "duration_ms": round(duration * 1000, 2),
+            }
+            if trace_id:
+                log_extra["trace_id"] = trace_id
+                log_extra["span_id"] = span_id
 
-            # Add correlation ID to response headers
+            logger.info("Request completed", extra=log_extra)
+
+            # Add observability headers
             response["X-Correlation-ID"] = correlation_id
             response["X-Request-Duration"] = f"{duration:.3f}"
+            if trace_id:
+                response["X-Trace-ID"] = trace_id
 
             return response
 
