@@ -9,6 +9,7 @@ These endpoints are used by brand systems to:
 import uuid
 from typing import Any
 
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
@@ -75,6 +76,22 @@ _license_repo = DjangoLicenseRepository()
 _activation_repo = DjangoActivationRepository()
 
 
+@extend_schema(
+    operation_id="provision_license",
+    summary="Provision License",
+    description=(
+        "Create a new license key and associated licenses for a customer. "
+        "This endpoint requires brand API key authentication."
+    ),
+    tags=["Brand API"],
+    request=ProvisionLicenseRequestSerializer,
+    responses={
+        201: ProvisionLicenseResponseSerializer,
+        400: {"description": "Bad Request"},
+        401: {"description": "Unauthorized"},
+        404: {"description": "Not Found"},
+    },
+)
 @api_view(["POST"])
 async def provision_license(request: Request) -> Response:
     """
@@ -129,6 +146,19 @@ async def provision_license(request: Request) -> Response:
         )
 
 
+@extend_schema(
+    operation_id="renew_license",
+    summary="Renew License",
+    description="Extend a license's expiration date.",
+    tags=["Brand API"],
+    request=RenewLicenseRequestSerializer,
+    responses={
+        200: {"description": "License renewed successfully"},
+        400: {"description": "Bad Request"},
+        401: {"description": "Unauthorized"},
+        404: {"description": "License not found"},
+    },
+)
 @api_view(["PATCH"])
 async def renew_license(request: Request, license_id: uuid.UUID) -> Response:
     """
@@ -171,6 +201,19 @@ async def renew_license(request: Request, license_id: uuid.UUID) -> Response:
         )
 
 
+@extend_schema(
+    operation_id="suspend_license",
+    summary="Suspend License",
+    description="Temporarily disable a license. Suspended licenses cannot be activated.",
+    tags=["Brand API"],
+    request=SuspendLicenseRequestSerializer,
+    responses={
+        200: {"description": "License suspended successfully"},
+        400: {"description": "Bad Request"},
+        401: {"description": "Unauthorized"},
+        404: {"description": "License not found"},
+    },
+)
 @api_view(["PATCH"])
 async def suspend_license(request: Request, license_id: uuid.UUID) -> Response:
     """
@@ -213,6 +256,19 @@ async def suspend_license(request: Request, license_id: uuid.UUID) -> Response:
         )
 
 
+@extend_schema(
+    operation_id="resume_license",
+    summary="Resume License",
+    description="Re-enable a suspended license.",
+    tags=["Brand API"],
+    request=ResumeLicenseRequestSerializer,
+    responses={
+        200: {"description": "License resumed successfully"},
+        400: {"description": "Bad Request"},
+        401: {"description": "Unauthorized"},
+        404: {"description": "License not found"},
+    },
+)
 @api_view(["PATCH"])
 async def resume_license(request: Request, license_id: uuid.UUID) -> Response:
     """
@@ -252,6 +308,19 @@ async def resume_license(request: Request, license_id: uuid.UUID) -> Response:
         )
 
 
+@extend_schema(
+    operation_id="cancel_license",
+    summary="Cancel License",
+    description="Permanently cancel a license. Cancelled licenses cannot be reactivated.",
+    tags=["Brand API"],
+    request=CancelLicenseRequestSerializer,
+    responses={
+        200: {"description": "License cancelled successfully"},
+        400: {"description": "Bad Request"},
+        401: {"description": "Unauthorized"},
+        404: {"description": "License not found"},
+    },
+)
 @api_view(["PATCH"])
 async def cancel_license(request: Request, license_id: uuid.UUID) -> Response:
     """
@@ -294,6 +363,26 @@ async def cancel_license(request: Request, license_id: uuid.UUID) -> Response:
         )
 
 
+@extend_schema(
+    operation_id="list_licenses_by_email",
+    summary="List Licenses by Email",
+    description="Query all licenses for a customer by email address.",
+    tags=["Brand API"],
+    parameters=[
+        OpenApiParameter(
+            name="email",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="Customer email address",
+        ),
+    ],
+    responses={
+        200: LicenseListItemSerializer(many=True),
+        400: {"description": "Bad Request"},
+        401: {"description": "Unauthorized"},
+    },
+)
 @api_view(["GET"])
 async def list_licenses_by_email(request: Request) -> Response:
     """

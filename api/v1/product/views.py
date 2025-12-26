@@ -9,6 +9,7 @@ These endpoints are used by end-user products to:
 import uuid
 
 from core.domain.value_objects import InstanceType
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
@@ -61,6 +62,23 @@ _product_repo = DjangoProductRepository()
 _activation_repo = DjangoActivationRepository()
 
 
+@extend_schema(
+    operation_id="activate_license",
+    summary="Activate License",
+    description=(
+        "Activate a license on a specific instance (URL, hostname, or machine ID). "
+        "This consumes a seat from the license's seat limit."
+    ),
+    tags=["Product API"],
+    request=ActivateLicenseRequestSerializer,
+    responses={
+        201: ActivateLicenseResponseSerializer,
+        400: {"description": "Bad Request"},
+        404: {"description": "License key not found"},
+        409: {"description": "License already activated on this instance"},
+        422: {"description": "License invalid, expired, or seat limit exceeded"},
+    },
+)
 @api_view(["POST"])
 async def activate_license(request: Request) -> Response:
     """
@@ -137,6 +155,37 @@ async def activate_license(request: Request) -> Response:
         )
 
 
+@extend_schema(
+    operation_id="get_license_status",
+    summary="Check License Status",
+    description=(
+        "Verify license validity and seat availability for a specific instance. "
+        "Returns license details and activation status."
+    ),
+    tags=["Product API"],
+    parameters=[
+        OpenApiParameter(
+            name="license_key",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="License key string",
+        ),
+        OpenApiParameter(
+            name="instance_identifier",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            required=False,
+            description="Instance identifier to check activation status",
+        ),
+    ],
+    responses={
+        200: LicenseStatusResponseSerializer,
+        400: {"description": "Bad Request"},
+        404: {"description": "License key not found"},
+        422: {"description": "License invalid, expired, or suspended"},
+    },
+)
 @api_view(["GET"])
 async def get_license_status(request: Request) -> Response:
     """
@@ -181,6 +230,21 @@ async def get_license_status(request: Request) -> Response:
         )
 
 
+@extend_schema(
+    operation_id="deactivate_seat",
+    summary="Deactivate Seat",
+    description=(
+        "Release a seat for reuse. This deactivates the license on a specific instance. "
+        "The seat becomes available for activation on another instance."
+    ),
+    tags=["Product API"],
+    request=DeactivateSeatRequestSerializer,
+    responses={
+        200: {"description": "Seat deactivated successfully"},
+        400: {"description": "Bad Request"},
+        404: {"description": "License key or activation not found"},
+    },
+)
 @api_view(["DELETE"])
 async def deactivate_seat(
     request: Request, activation_id: uuid.UUID

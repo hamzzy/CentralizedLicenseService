@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Third party
     "rest_framework",
+    "drf_spectacular",
     # Local apps
     "core",
     "brands",
@@ -135,6 +136,26 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "api.exceptions.custom_exception_handler",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 100,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+# drf-spectacular settings
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Centralized License Service API",
+    "DESCRIPTION": (
+        "A multi-tenant license management service API. "
+        "Provides endpoints for brand-facing license provisioning "
+        "and product-facing license activation."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SCHEMA_PATH_PREFIX": "/api/v1",
+    "TAGS": [
+        {"name": "Brand API", "description": "Brand-facing license management"},
+        {"name": "Product API", "description": "Product-facing license activation"},
+        {"name": "Health", "description": "Health check endpoints"},
+    ],
 }
 
 # Redis Cache
