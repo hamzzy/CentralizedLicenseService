@@ -11,7 +11,7 @@ from brands.infrastructure.models import ApiKey, Brand, WebhookConfig
 class BrandAdmin(admin.ModelAdmin):
     """Admin interface for Brand model."""
 
-    list_display = ["name", "slug", "prefix", "rate_limit_per_minute", "created_at"]
+    list_display = ["name", "slug", "prefix", "created_at"]
     list_filter = ["created_at", "updated_at"]
     search_fields = ["name", "slug", "prefix"]
     readonly_fields = ["id", "created_at", "updated_at"]
@@ -20,12 +20,6 @@ class BrandAdmin(admin.ModelAdmin):
             "Basic Information",
             {
                 "fields": ("id", "name", "slug", "prefix"),
-            },
-        ),
-        (
-            "Rate Limiting",
-            {
-                "fields": ("rate_limit_per_minute",),
             },
         ),
         (

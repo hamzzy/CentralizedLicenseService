@@ -14,14 +14,12 @@ class ActivationAdmin(admin.ModelAdmin):
     list_display = [
         "license",
         "instance_identifier_display",
-        "instance_type",
         "is_active_display",
         "activated_at",
         "last_checked_at",
     ]
     list_filter = [
         "is_active",
-        "instance_type",
         "activated_at",
         "last_checked_at",
         "license__product__brand",
@@ -46,7 +44,7 @@ class ActivationAdmin(admin.ModelAdmin):
         (
             "Instance Information",
             {
-                "fields": ("instance_identifier", "instance_type"),
+                "fields": ("instance_identifier", "instance_metadata"),
             },
         ),
         (
