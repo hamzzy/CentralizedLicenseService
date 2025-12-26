@@ -84,4 +84,15 @@ class InMemoryEventBus(EventBus):
 
 
 # Global event bus instance
-event_bus = InMemoryEventBus()
+# Use RabbitMQ in production, InMemoryEventBus for development/testing
+import os
+
+if os.environ.get("USE_RABBITMQ", "false").lower() == "true":
+    from core.infrastructure.rabbitmq_event_bus import RabbitMQEventBus
+
+    broker_url = os.environ.get(
+        "RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672//"
+    )
+    event_bus = RabbitMQEventBus(broker_url=broker_url)
+else:
+    event_bus = InMemoryEventBus()

@@ -66,6 +66,7 @@ MIDDLEWARE = [
     # Custom middleware
     "core.middleware.tenant.TenantMiddleware",
     "core.middleware.auth.APIKeyAuthenticationMiddleware",
+    "core.middleware.rate_limit.RateLimitMiddleware",
     "core.middleware.tracing.TracingMiddleware",
     "core.middleware.metrics.MetricsMiddleware",
     "core.middleware.observability.ObservabilityMiddleware",

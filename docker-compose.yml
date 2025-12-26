@@ -111,6 +111,45 @@ services:
       - tempo_data:/var/tempo
     command: ["-config.file=/etc/tempo.yaml"]
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: docker/app/dev.Dockerfile
+    volumes:
+      - .:/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=CentralizedLicenseService.settings.dev
+      - DOCKER_ENV=1
+      - DB_HOST=db
+      - DB_NAME=license_service
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - USE_RABBITMQ=true
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672//
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+    command: celery -A CentralizedLicenseService worker --loglevel=info
+
 volumes:
   postgres_data:
   redis_data:
@@ -118,4 +157,5 @@ volumes:
   grafana_data:
   loki_data:
   tempo_data:
+  rabbitmq_data:
 

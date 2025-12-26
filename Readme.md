@@ -180,6 +180,9 @@ docker-compose exec app python manage.py migrate
 - Swagger UI: http://localhost:8000/api/docs/
 - ReDoc: http://localhost:8000/api/redoc/
 - OpenAPI Schema: http://localhost:8000/api/schema/
+- **Grafana**: http://localhost:3000 (admin/admin)
+- **Prometheus**: http://localhost:9091
+- **Prometheus Metrics**: http://localhost:9090/metrics
 
 ## API Documentation
 
