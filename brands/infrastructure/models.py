@@ -47,9 +47,14 @@ class Brand(models.Model):
         if not self.prefix:
             raise ValidationError("Prefix is required")
         if len(self.prefix) < 2 or len(self.prefix) > 10:
-            raise ValidationError("Prefix must be between 2 and 10 characters")
+            raise ValidationError(
+                "Prefix must be between 2 and 10 characters"
+            )
         if not self.prefix.replace("-", "").replace("_", "").isalnum():
-            raise ValidationError("Prefix must contain only alphanumeric characters, hyphens, or underscores")
+            raise ValidationError(
+                "Prefix must contain only alphanumeric characters, "
+                "hyphens, or underscores"
+            )
 
     def save(self, *args, **kwargs):
         """Save brand with validation."""
@@ -69,7 +74,9 @@ class Brand(models.Model):
         Returns:
             ApiKey instance with _raw_key attribute set
         """
-        return ApiKey.objects.create(brand=self, scope=scope)
+        return ApiKey.objects.create(
+            brand=self, scope=scope
+        )
 
 
 class ApiKey(models.Model):
@@ -117,7 +124,9 @@ class ApiKey(models.Model):
             # Generate a secure random key
             raw_key = secrets.token_urlsafe(32)
             self.key_prefix = raw_key[:8]
-            self.key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+            self.key_hash = hashlib.sha256(
+                raw_key.encode()
+            ).hexdigest()
             # Store the raw key temporarily for retrieval
             self._raw_key = raw_key
         self.full_clean()

@@ -21,9 +21,9 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 # Context variable for tenant (brand) ID - using UUID
-tenant_context: contextvars.ContextVar[Optional[uuid.UUID]] = contextvars.ContextVar(
-    "tenant_id", default=None
-)
+tenant_context: contextvars.ContextVar[
+    Optional[uuid.UUID]
+] = contextvars.ContextVar("tenant_id", default=None)
 
 
 def get_current_tenant_id() -> Optional[uuid.UUID]:
@@ -62,8 +62,9 @@ class TenantMiddleware:
             HTTP response
         """
         # Extract API key from header
-        api_key = request.headers.get("X-API-Key") or request.headers.get("Authorization", "").replace(
-            "Bearer ", ""
+        api_key = (
+            request.headers.get("X-API-Key")
+            or request.headers.get("Authorization", "").replace("Bearer ", "")
         )
 
         tenant_id = None
@@ -76,7 +77,9 @@ class TenantMiddleware:
                 api_key_obj = ApiKey.objects.filter(key_hash=api_key_hash).first()
                 if api_key_obj and api_key_obj.is_valid():
                     tenant_id = api_key_obj.brand.id
-                    logger.debug(f"Tenant context set to brand_id={tenant_id}")
+                    logger.debug(
+                        f"Tenant context set to brand_id={tenant_id}"
+                    )
             except Exception as e:
                 logger.warning(f"Error looking up tenant: {e}")
 
@@ -96,4 +99,3 @@ class TenantMiddleware:
 
 # Lazy object for accessing current tenant in views
 current_tenant = SimpleLazyObject(get_current_tenant_id)
-
