@@ -64,6 +64,15 @@ class ActivateLicenseView(APIView):
             "This consumes a seat from the license's seat limit."
         ),
         tags=["Product API"],
+        parameters=[
+            OpenApiParameter(
+                name="X-License-Key",
+                type=str,
+                location=OpenApiParameter.HEADER,
+                required=True,
+                description="License key for product authentication",
+            ),
+        ],
         request=ActivateLicenseRequestSerializer,
         responses={
             201: ActivateLicenseResponseSerializer,
@@ -154,16 +163,24 @@ class GetLicenseStatusView(APIView):
         summary="Check License Status",
         description=(
             "Verify license validity and seat availability for a specific instance. "
-            "Returns license details and activation status."
+            "Returns license details and activation status. "
+            "Requires either X-License-Key header or license_key query parameter."
         ),
         tags=["Product API"],
         parameters=[
             OpenApiParameter(
+                name="X-License-Key",
+                type=str,
+                location=OpenApiParameter.HEADER,
+                required=False,
+                description="License key for product authentication (provide either this or license_key query parameter)",
+            ),
+            OpenApiParameter(
                 name="license_key",
                 type=str,
                 location=OpenApiParameter.QUERY,
-                required=True,
-                description="License key string",
+                required=False,
+                description="License key string (provide either this or X-License-Key header)",
             ),
             OpenApiParameter(
                 name="instance_identifier",
@@ -237,6 +254,15 @@ class DeactivateSeatView(APIView):
             "The seat becomes available for activation on another instance."
         ),
         tags=["Product API"],
+        parameters=[
+            OpenApiParameter(
+                name="X-License-Key",
+                type=str,
+                location=OpenApiParameter.HEADER,
+                required=True,
+                description="License key for product authentication",
+            ),
+        ],
         request=DeactivateSeatRequestSerializer,
         responses={
             200: {"description": "Seat deactivated successfully"},

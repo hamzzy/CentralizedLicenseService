@@ -72,6 +72,15 @@ class ProvisionLicenseView(APIView):
             "This endpoint requires brand API key authentication via X-API-Key header."
         ),
         tags=["Brand API"],
+        parameters=[
+            OpenApiParameter(
+                name="X-API-Key",
+                type=str,
+                location=OpenApiParameter.HEADER,
+                required=True,
+                description="API key for brand authentication",
+            ),
+        ],
         request=ProvisionLicenseRequestSerializer,
         responses={
             201: ProvisionLicenseResponseSerializer,
@@ -144,6 +153,15 @@ class RenewLicenseView(APIView):
         summary="Renew License",
         description="Extend a license's expiration date.",
         tags=["Brand API"],
+        parameters=[
+            OpenApiParameter(
+                name="X-API-Key",
+                type=str,
+                location=OpenApiParameter.HEADER,
+                required=True,
+                description="API key for brand authentication",
+            ),
+        ],
         request=RenewLicenseRequestSerializer,
         responses={
             200: {"description": "License renewed successfully"},
@@ -201,6 +219,15 @@ class SuspendLicenseView(APIView):
         summary="Suspend License",
         description="Temporarily disable a license. Suspended licenses cannot be activated.",
         tags=["Brand API"],
+        parameters=[
+            OpenApiParameter(
+                name="X-API-Key",
+                type=str,
+                location=OpenApiParameter.HEADER,
+                required=True,
+                description="API key for brand authentication",
+            ),
+        ],
         request=SuspendLicenseRequestSerializer,
         responses={
             200: {"description": "License suspended successfully"},
@@ -259,6 +286,15 @@ class ResumeLicenseView(APIView):
         summary="Resume License",
         description="Re-enable a suspended license.",
         tags=["Brand API"],
+        parameters=[
+            OpenApiParameter(
+                name="X-API-Key",
+                type=str,
+                location=OpenApiParameter.HEADER,
+                required=True,
+                description="API key for brand authentication",
+            ),
+        ],
         request=ResumeLicenseRequestSerializer,
         responses={
             200: {"description": "License resumed successfully"},
@@ -311,6 +347,15 @@ class CancelLicenseView(APIView):
         summary="Cancel License",
         description="Permanently cancel a license. Cancelled licenses cannot be reactivated.",
         tags=["Brand API"],
+        parameters=[
+            OpenApiParameter(
+                name="X-API-Key",
+                type=str,
+                location=OpenApiParameter.HEADER,
+                required=True,
+                description="API key for brand authentication",
+            ),
+        ],
         request=CancelLicenseRequestSerializer,
         responses={
             200: {"description": "License cancelled successfully"},
@@ -370,6 +415,13 @@ class ListLicensesByEmailView(APIView):
         description="Query all licenses for a customer by email address.",
         tags=["Brand API"],
         parameters=[
+            OpenApiParameter(
+                name="X-API-Key",
+                type=str,
+                location=OpenApiParameter.HEADER,
+                required=True,
+                description="API key for brand authentication",
+            ),
             OpenApiParameter(
                 name="email",
                 type=str,
