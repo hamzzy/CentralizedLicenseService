@@ -53,7 +53,7 @@ tracer = get_tracer(__name__)
 class ActivateLicenseView(APIView):
     """View for activating licenses - US3."""
 
-@extend_schema(
+    @extend_schema(
     operation_id="activate_license",
     summary="Activate License",
     description=(
@@ -75,88 +75,90 @@ class ActivateLicenseView(APIView):
         with tracer.start_as_current_span("activate_license") as span:
             span.set_attribute("operation", "activate_license")
 
-    serializer = ActivateLicenseRequestSerializer(data=request.data)
-    if not serializer.is_valid():
+            serializer = ActivateLicenseRequestSerializer(data=request.data)
+            if not serializer.is_valid():
                 span.set_attribute("error", "validation_failed")
                 span.set_status(trace.Status(trace.StatusCode.ERROR, "Validation failed"))
-        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get license key from request (set by middleware)
-    license_key_obj = getattr(request, "license_key", None)
-    if not license_key_obj:
+            # Get license key from request (set by middleware)
+            license_key_obj = getattr(request, "license_key", None)
+            if not license_key_obj:
                 span.set_attribute("error", "license_key_not_found")
                 span.set_status(trace.Status(trace.StatusCode.ERROR, "License key not found"))
-        return Response(
-            {"error": "License key not found"},
-            status=status.HTTP_401_UNAUTHORIZED,
-        )
+                return Response(
+                    {"error": "License key not found"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
 
-    license_key = license_key_obj.key
+            license_key = license_key_obj.key
             span.set_attribute("license_key", license_key)
             span.set_attribute("product_slug", serializer.validated_data["product_slug"])
-            span.set_attribute("instance_identifier", serializer.validated_data["instance_identifier"])
+            span.set_attribute(
+                "instance_identifier", serializer.validated_data["instance_identifier"]
+            )
             span.set_attribute("instance_type", serializer.validated_data["instance_type"])
 
-    try:
-        handler = ActivateLicenseHandler(
-            license_key_repository=_license_key_repo,
-            license_repository=_license_repo,
-            product_repository=_product_repo,
-            activation_repository=_activation_repo,
-        )
+            try:
+                handler = ActivateLicenseHandler(
+                    license_key_repository=_license_key_repo,
+                    license_repository=_license_repo,
+                    product_repository=_product_repo,
+                    activation_repository=_activation_repo,
+                )
 
-        # Map instance type string to enum
-        instance_type_map = {
-            "url": InstanceType.URL,
-            "hostname": InstanceType.HOSTNAME,
-            "machine_id": InstanceType.MACHINE_ID,
-        }
-        instance_type = instance_type_map.get(serializer.validated_data["instance_type"])
-        if not instance_type:
+                # Map instance type string to enum
+                instance_type_map = {
+                    "url": InstanceType.URL,
+                    "hostname": InstanceType.HOSTNAME,
+                    "machine_id": InstanceType.MACHINE_ID,
+                }
+                instance_type = instance_type_map.get(serializer.validated_data["instance_type"])
+                if not instance_type:
                     span.set_attribute("error", "invalid_instance_type")
                     span.set_status(trace.Status(trace.StatusCode.ERROR, "Invalid instance type"))
-            return Response(
-                {"error": "Invalid instance_type"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+                    return Response(
+                        {"error": "Invalid instance_type"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
-        command = ActivateLicenseCommand(
-            license_key=license_key,
-            product_slug=serializer.validated_data["product_slug"],
-            instance_identifier=serializer.validated_data["instance_identifier"],
-            instance_type=instance_type,
-            instance_metadata=serializer.validated_data.get("instance_metadata", {}),
-        )
+                command = ActivateLicenseCommand(
+                    license_key=license_key,
+                    product_slug=serializer.validated_data["product_slug"],
+                    instance_identifier=serializer.validated_data["instance_identifier"],
+                    instance_type=instance_type,
+                    instance_metadata=serializer.validated_data.get("instance_metadata", {}),
+                )
 
-        result = await handler.handle(command)
+                result = await handler.handle(command)
 
-        response_serializer = ActivateLicenseResponseSerializer(result)
+                response_serializer = ActivateLicenseResponseSerializer(result)
                 span.set_attribute("activation.id", str(result.activation_id))
                 span.set_attribute("license.id", str(result.license_id))
                 span.set_status(trace.Status(trace.StatusCode.OK))
-                
-        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
-    except DomainException as e:
+                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+            except DomainException as e:
                 span.set_attribute("error", "domain_exception")
                 span.set_attribute("error.message", str(e))
                 span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception:
                 span.set_attribute("error", "internal_error")
                 span.set_status(
                     trace.Status(trace.StatusCode.ERROR, "Internal server error")
                 )
-        return Response(
-            {"error": "Internal server error"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+                return Response(
+                    {"error": "Internal server error"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
 
 class GetLicenseStatusView(APIView):
     """View for checking license status - US4."""
 
-@extend_schema(
+    @extend_schema(
     operation_id="get_license_status",
     summary="Check License Status",
     description=(
@@ -197,56 +199,58 @@ class GetLicenseStatusView(APIView):
                 or request.headers.get("X-License-Key")
             )
 
-    if not license_key:
+            if not license_key:
                 span.set_attribute("error", "license_key_required")
                 span.set_status(trace.Status(trace.StatusCode.ERROR, "License key required"))
-        return Response(
-            {"error": "license_key parameter or X-License-Key header required"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+                return Response(
+                    {"error": "license_key parameter or X-License-Key header required"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             span.set_attribute("license_key", license_key)
             instance_identifier = request.query_params.get("instance_identifier")
             if instance_identifier:
                 span.set_attribute("instance_identifier", instance_identifier)
 
-    try:
-        handler = GetLicenseStatusHandler(
-            license_key_repository=_license_key_repo,
-            license_repository=_license_repo,
-            product_repository=_product_repo,
-            activation_repository=_activation_repo,
-        )
+            try:
+                handler = GetLicenseStatusHandler(
+                    license_key_repository=_license_key_repo,
+                    license_repository=_license_repo,
+                    product_repository=_product_repo,
+                    activation_repository=_activation_repo,
+                )
 
-        query = GetLicenseStatusQuery(license_key=license_key)
+                query = GetLicenseStatusQuery(license_key=license_key)
 
-        result = await handler.handle(query)
+                result = await handler.handle(query)
 
-        serializer = LicenseStatusResponseSerializer(result)
+                serializer = LicenseStatusResponseSerializer(result)
                 span.set_attribute("status", result.status)
                 span.set_attribute("is_valid", str(result.is_valid))
                 span.set_attribute("licenses.count", len(result.licenses))
                 span.set_status(trace.Status(trace.StatusCode.OK))
-                
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    except DomainException as e:
+                return Response(serializer.data, status=status.HTTP_200_OK)
+
+            except DomainException as e:
                 span.set_attribute("error", "domain_exception")
                 span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
-        return Response(
-            {"error": "Internal server error"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+                span.set_status(
+                    trace.Status(trace.StatusCode.ERROR, "Internal server error")
+                )
+                return Response(
+                    {"error": "Internal server error"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
 
 class DeactivateSeatView(APIView):
     """View for deactivating seats - US5."""
 
-@extend_schema(
+    @extend_schema(
     operation_id="deactivate_seat",
     summary="Deactivate Seat",
     description=(
@@ -267,61 +271,63 @@ class DeactivateSeatView(APIView):
             span.set_attribute("operation", "deactivate_seat")
             span.set_attribute("activation.id", str(activation_id))
 
-    # Get license key from request (set by middleware)
-    license_key_obj = getattr(request, "license_key", None)
-    if not license_key_obj:
+            # Get license key from request (set by middleware)
+            license_key_obj = getattr(request, "license_key", None)
+            if not license_key_obj:
                 span.set_attribute("error", "license_key_not_found")
                 span.set_status(trace.Status(trace.StatusCode.ERROR, "License key not found"))
-        return Response(
-            {"error": "License key not found"},
-            status=status.HTTP_401_UNAUTHORIZED,
-        )
+                return Response(
+                    {"error": "License key not found"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
 
-    license_key = license_key_obj.key
+            license_key = license_key_obj.key
             span.set_attribute("license_key", license_key)
 
-    # Get instance_identifier from request body or query param
-    instance_identifier = request.data.get("instance_identifier") or request.query_params.get(
-        "instance_identifier"
-    )
+            # Get instance_identifier from request body or query param
+            instance_identifier = request.data.get("instance_identifier") or request.query_params.get(
+                "instance_identifier"
+            )
 
-    if not instance_identifier:
+            if not instance_identifier:
                 span.set_attribute("error", "instance_identifier_required")
                 span.set_status(trace.Status(trace.StatusCode.ERROR, "Instance identifier required"))
-        return Response(
-            {"error": "instance_identifier is required"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+                return Response(
+                    {"error": "instance_identifier is required"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             span.set_attribute("instance_identifier", instance_identifier)
 
-    try:
-        handler = DeactivateSeatHandler(
-            license_key_repository=_license_key_repo,
-            activation_repository=_activation_repo,
-        )
+            try:
+                handler = DeactivateSeatHandler(
+                    license_key_repository=_license_key_repo,
+                    activation_repository=_activation_repo,
+                )
 
-        command = DeactivateSeatCommand(
-            license_key=license_key,
-            instance_identifier=instance_identifier,
-        )
+                command = DeactivateSeatCommand(
+                    license_key=license_key,
+                    instance_identifier=instance_identifier,
+                )
 
-        await handler.handle(command)
+                await handler.handle(command)
 
                 span.set_status(trace.Status(trace.StatusCode.OK))
-        return Response(
-            {"message": "Seat deactivated successfully"},
-            status=status.HTTP_200_OK,
-        )
+                return Response(
+                    {"message": "Seat deactivated successfully"},
+                    status=status.HTTP_200_OK,
+                )
 
-    except DomainException as e:
+            except DomainException as e:
                 span.set_attribute("error", "domain_exception")
                 span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception:
                 span.set_attribute("error", "internal_error")
-                span.set_status(trace.Status(trace.StatusCode.ERROR, "Internal server error"))
-        return Response(
-            {"error": "Internal server error"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+                span.set_status(
+                    trace.Status(trace.StatusCode.ERROR, "Internal server error")
+                )
+                return Response(
+                    {"error": "Internal server error"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )

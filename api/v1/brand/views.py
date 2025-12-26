@@ -9,11 +9,7 @@ These endpoints are used by brand systems to:
 
 import uuid
 
-from drf_spectacular.utils import (
-    OpenApiParameter,
-    extend_schema,
-    extend_schema_view,
-)
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from opentelemetry import trace
 from rest_framework import status
 from rest_framework.request import Request
@@ -65,28 +61,25 @@ _activation_repo = DjangoActivationRepository()
 tracer = get_tracer(__name__)
 
 
-@extend_schema_view(
-    post=extend_schema(security=[{"ApiKeyAuth": []}]),
-)
 class ProvisionLicenseView(APIView):
     """View for provisioning licenses - US1."""
 
     @extend_schema(
-        operation_id="provision_license",
-        summary="Provision License",
-        description=(
-            "Create a new license key and associated licenses for a customer. "
+    operation_id="provision_license",
+    summary="Provision License",
+    description=(
+        "Create a new license key and associated licenses for a customer. "
             "This endpoint requires brand API key authentication via X-API-Key header."
-        ),
-        tags=["Brand API"],
-        request=ProvisionLicenseRequestSerializer,
-        responses={
-            201: ProvisionLicenseResponseSerializer,
-            400: {"description": "Bad Request"},
+    ),
+    tags=["Brand API"],
+    request=ProvisionLicenseRequestSerializer,
+    responses={
+        201: ProvisionLicenseResponseSerializer,
+        400: {"description": "Bad Request"},
             401: {"description": "Unauthorized - Missing or invalid API key"},
-            404: {"description": "Not Found"},
-        },
-    )
+        404: {"description": "Not Found"},
+    },
+)
     async def post(self, request: Request) -> Response:
         """Provision a license key and licenses - US1."""
         with tracer.start_as_current_span("provision_license") as span:
@@ -158,25 +151,22 @@ class ProvisionLicenseView(APIView):
                 )
 
 
-@extend_schema_view(
-    patch=extend_schema(security=[{"ApiKeyAuth": []}]),
-)
 class RenewLicenseView(APIView):
     """View for renewing licenses - US2."""
 
     @extend_schema(
-        operation_id="renew_license",
-        summary="Renew License",
-        description="Extend a license's expiration date.",
-        tags=["Brand API"],
-        request=RenewLicenseRequestSerializer,
-        responses={
-            200: {"description": "License renewed successfully"},
-            400: {"description": "Bad Request"},
+    operation_id="renew_license",
+    summary="Renew License",
+    description="Extend a license's expiration date.",
+    tags=["Brand API"],
+    request=RenewLicenseRequestSerializer,
+    responses={
+        200: {"description": "License renewed successfully"},
+        400: {"description": "Bad Request"},
             401: {"description": "Unauthorized - Missing or invalid API key"},
-            404: {"description": "License not found"},
-        },
-    )
+        404: {"description": "License not found"},
+    },
+)
     async def patch(self, request: Request, license_id: uuid.UUID) -> Response:
         """Renew a license - US2."""
         with tracer.start_as_current_span("renew_license") as span:
@@ -229,25 +219,22 @@ class RenewLicenseView(APIView):
                 )
 
 
-@extend_schema_view(
-    patch=extend_schema(security=[{"ApiKeyAuth": []}]),
-)
 class SuspendLicenseView(APIView):
     """View for suspending licenses - US2."""
 
     @extend_schema(
-        operation_id="suspend_license",
-        summary="Suspend License",
-        description="Temporarily disable a license. Suspended licenses cannot be activated.",
-        tags=["Brand API"],
-        request=SuspendLicenseRequestSerializer,
-        responses={
-            200: {"description": "License suspended successfully"},
-            400: {"description": "Bad Request"},
+    operation_id="suspend_license",
+    summary="Suspend License",
+    description="Temporarily disable a license. Suspended licenses cannot be activated.",
+    tags=["Brand API"],
+    request=SuspendLicenseRequestSerializer,
+    responses={
+        200: {"description": "License suspended successfully"},
+        400: {"description": "Bad Request"},
             401: {"description": "Unauthorized - Missing or invalid API key"},
-            404: {"description": "License not found"},
-        },
-    )
+        404: {"description": "License not found"},
+    },
+)
     async def patch(self, request: Request, license_id: uuid.UUID) -> Response:
         """Suspend a license - US2."""
         with tracer.start_as_current_span("suspend_license") as span:
@@ -301,25 +288,22 @@ class SuspendLicenseView(APIView):
                 )
 
 
-@extend_schema_view(
-    patch=extend_schema(security=[{"ApiKeyAuth": []}]),
-)
 class ResumeLicenseView(APIView):
     """View for resuming licenses - US2."""
 
     @extend_schema(
-        operation_id="resume_license",
-        summary="Resume License",
-        description="Re-enable a suspended license.",
-        tags=["Brand API"],
-        request=ResumeLicenseRequestSerializer,
-        responses={
-            200: {"description": "License resumed successfully"},
-            400: {"description": "Bad Request"},
+    operation_id="resume_license",
+    summary="Resume License",
+    description="Re-enable a suspended license.",
+    tags=["Brand API"],
+    request=ResumeLicenseRequestSerializer,
+    responses={
+        200: {"description": "License resumed successfully"},
+        400: {"description": "Bad Request"},
             401: {"description": "Unauthorized - Missing or invalid API key"},
-            404: {"description": "License not found"},
-        },
-    )
+        404: {"description": "License not found"},
+    },
+)
     async def patch(self, request: Request, license_id: uuid.UUID) -> Response:
         """Resume a license - US2."""
         with tracer.start_as_current_span("resume_license") as span:
@@ -367,25 +351,22 @@ class ResumeLicenseView(APIView):
                 )
 
 
-@extend_schema_view(
-    patch=extend_schema(security=[{"ApiKeyAuth": []}]),
-)
 class CancelLicenseView(APIView):
     """View for cancelling licenses - US2."""
 
     @extend_schema(
-        operation_id="cancel_license",
-        summary="Cancel License",
-        description="Permanently cancel a license. Cancelled licenses cannot be reactivated.",
-        tags=["Brand API"],
-        request=CancelLicenseRequestSerializer,
-        responses={
-            200: {"description": "License cancelled successfully"},
-            400: {"description": "Bad Request"},
+    operation_id="cancel_license",
+    summary="Cancel License",
+    description="Permanently cancel a license. Cancelled licenses cannot be reactivated.",
+    tags=["Brand API"],
+    request=CancelLicenseRequestSerializer,
+    responses={
+        200: {"description": "License cancelled successfully"},
+        400: {"description": "Bad Request"},
             401: {"description": "Unauthorized - Missing or invalid API key"},
-            404: {"description": "License not found"},
-        },
-    )
+        404: {"description": "License not found"},
+    },
+)
     async def patch(self, request: Request, license_id: uuid.UUID) -> Response:
         """Cancel a license - US2."""
         with tracer.start_as_current_span("cancel_license") as span:
@@ -439,32 +420,29 @@ class CancelLicenseView(APIView):
                 )
 
 
-@extend_schema_view(
-    get=extend_schema(security=[{"ApiKeyAuth": []}]),
-)
 class ListLicensesByEmailView(APIView):
     """View for listing licenses by customer email - US6."""
 
     @extend_schema(
-        operation_id="list_licenses_by_email",
-        summary="List Licenses by Email",
-        description="Query all licenses for a customer by email address.",
-        tags=["Brand API"],
-        parameters=[
-            OpenApiParameter(
-                name="email",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                required=True,
-                description="Customer email address",
-            ),
-        ],
-        responses={
-            200: LicenseListItemSerializer(many=True),
-            400: {"description": "Bad Request"},
+    operation_id="list_licenses_by_email",
+    summary="List Licenses by Email",
+    description="Query all licenses for a customer by email address.",
+    tags=["Brand API"],
+    parameters=[
+        OpenApiParameter(
+            name="email",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="Customer email address",
+        ),
+    ],
+    responses={
+        200: LicenseListItemSerializer(many=True),
+        400: {"description": "Bad Request"},
             401: {"description": "Unauthorized - Missing or invalid API key"},
-        },
-    )
+    },
+)
     async def get(self, request: Request) -> Response:
         """List licenses by customer email - US6."""
         with tracer.start_as_current_span("list_licenses_by_email") as span:

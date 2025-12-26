@@ -85,8 +85,14 @@ services:
       - "3100:3100"
     volumes:
       - ./docker/observability/loki-config.yml:/etc/loki/local-config.yaml
-      - loki_data:/tmp/loki
-    command: -config.file=/etc/loki/local-config.yaml
+      - loki_data:/loki
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        mkdir -p /loki/rules /loki/chunks
+        chmod -R 777 /loki
+        exec /usr/bin/loki -config.file=/etc/loki/local-config.yaml -validation.allow-structured-metadata=false
 
   promtail:
     image: grafana/promtail:latest

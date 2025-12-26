@@ -40,25 +40,25 @@ class MetricsMiddleware:
         endpoint = re.sub(r"/\d+", "/{id}", endpoint)
 
         try:
-        # Process request
-        response = self.get_response(request)
+            # Process request
+            response = self.get_response(request)
 
-        # Calculate duration
-        duration = time.time() - start_time
+            # Calculate duration
+            duration = time.time() - start_time
 
-        # Record metrics
-        http_requests_total.labels(
-            method=request.method,
-            endpoint=endpoint,
-            status_code=response.status_code,
-        ).inc()
+            # Record metrics
+            http_requests_total.labels(
+                method=request.method,
+                endpoint=endpoint,
+                status_code=response.status_code,
+            ).inc()
 
-        http_request_duration_seconds.labels(
-            method=request.method,
-            endpoint=endpoint,
-        ).observe(duration)
+            http_request_duration_seconds.labels(
+                method=request.method,
+                endpoint=endpoint,
+            ).observe(duration)
 
-        return response
+            return response
         except Exception as e:
             # Calculate duration even on error
             duration = time.time() - start_time

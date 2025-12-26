@@ -85,12 +85,12 @@ class TracingMiddleware:
             # Process request
             start_time = time.time()
             try:
-            response = self.get_response(request)
-            duration = time.time() - start_time
+                response = self.get_response(request)
+                duration = time.time() - start_time
 
                 # Add response span attributes
-            span.set_attribute("http.status_code", response.status_code)
-            span.set_attribute("http.response_size", len(response.content))
+                span.set_attribute("http.status_code", response.status_code)
+                span.set_attribute("http.response_size", len(response.content))
                 span.set_attribute("http.duration_ms", round(duration * 1000, 2))
 
                 # Add response content type
@@ -103,15 +103,15 @@ class TracingMiddleware:
                 if correlation_id:
                     span.set_attribute("correlation.id", str(correlation_id))
 
-                # Set span status based on HTTP status code
-            if response.status_code >= 500:
+                    # Set span status based on HTTP status code
+                if response.status_code >= 500:
                     span.set_status(trace.Status(trace.StatusCode.ERROR, f"HTTP {response.status_code}"))
-            elif response.status_code >= 400:
+                elif response.status_code >= 400:
                     span.set_status(trace.Status(trace.StatusCode.ERROR, f"HTTP {response.status_code}"))
                 else:
                     span.set_status(trace.Status(trace.StatusCode.OK))
 
-            return response
+                return response
             except Exception as e:
                 duration = time.time() - start_time
                 span.set_attribute("http.duration_ms", round(duration * 1000, 2))
